@@ -1,0 +1,58 @@
+export const priceCategories = [
+  {
+    title: 'Männer, Beauty & Kinder',
+    groups: [
+      { title: 'Männer', items: [{ label: 'Schneiden', duration: '-', price: 'CHF 28' }, { label: 'Waschen, Schneiden & Föhnen', duration: '-', price: 'CHF 35' }, { label: 'Bart', duration: '-', price: 'CHF 20' }, { label: 'Haare und Bart', duration: '-', price: 'CHF 43' }, { label: 'Nassrasur', duration: '-', price: 'CHF 20' }, { label: 'Farbe', duration: '-', price: 'CHF 35' }, { label: 'Haarentfernen mit Wax', duration: '-', price: 'CHF 10' }] },
+      { title: 'Augenbrauen & Wimpern', items: [{ label: 'Augenbrauen färben & zupfen', duration: '20 min', price: 'CHF 30' }, { label: 'Augenbrauen zupfen', duration: '15 min', price: 'CHF 15' }, { label: 'Augenbrauen färben', duration: '15 min', price: 'CHF 15' }, { label: 'Wimpern färben', duration: '15 min', price: 'CHF 15' }, { label: 'Augenbrauen Waxing', duration: '15 min', price: 'CHF 15' }] },
+      { title: 'Kinder', items: [{ label: 'Kinder bis 12 Jahren', duration: '-', price: 'CHF 25' }, { label: 'Mädchen', duration: '-', price: 'CHF 20' }, { label: 'Jungen', duration: '-', price: 'CHF 20' }] },
+      { title: 'Gesichtsbehandlungen', items: [{ label: 'Reinigung', duration: '25 min', price: 'CHF 25' }, { label: 'Maske', duration: '-', price: 'CHF 25' }] },
+      { title: 'VIP Men Paket', items: [{ label: 'VIP Men Paket', duration: 'inkl. Waschen, Schneiden, Bart, Augenbrauen zupfen, Wax, Gesichtsmaske, Reinigung', price: 'CHF 75' }] },
+    ],
+  },
+  {
+    title: 'Damen - Haarschnitte & Styling',
+    groups: [
+      { title: 'Waschen, Schneiden & Föhnen', items: [{ label: 'kurz', duration: '1 Std', price: 'CHF 80' }, { label: 'mittel', duration: '1 Std', price: 'CHF 80' }, { label: 'lang', duration: '1 Std 15 min', price: 'CHF 88' }] },
+      { title: 'Waschen & Schneiden', items: [{ label: 'kurz', duration: '30 min', price: 'CHF 42' }, { label: 'mittel', duration: '30 min', price: 'CHF 42' }, { label: 'lang', duration: '30 min', price: 'CHF 42' }] },
+      { title: 'Waschen & Föhnen', items: [{ label: 'kurz', duration: '30 min', price: 'CHF 45' }, { label: 'mittel', duration: '40 min', price: 'CHF 45' }, { label: 'lang', duration: '45 min', price: 'CHF 55' }] },
+      { title: 'Cut & Go', items: [{ label: 'kurz', duration: '20 min', price: 'CHF 35' }, { label: 'mittel', duration: '20 min', price: 'CHF 35' }, { label: 'lang', duration: '20 min', price: 'CHF 35' }] },
+      { title: 'Weitere Stylings', items: [{ label: 'Haarschnitt', duration: '20 min', price: 'CHF 35' }, { label: 'Pony schneiden', duration: '10 min', price: 'CHF 15' }, { label: 'Haare glätten', duration: '50 min', price: 'CHF 55' }] },
+      { title: 'Dauerwelle', items: [{ label: 'kurz', duration: '1 Std 30 min', price: 'CHF 160' }, { label: 'mittel', duration: '1 Std 30 min', price: 'CHF 170' }, { label: 'lang', duration: '1 Std 30 min', price: 'CHF 190' }] },
+    ],
+  },
+  {
+    title: 'Damen - Farbe & Coloration',
+    groups: [
+      { title: 'Färben ganzer Kopf, Schneiden & Föhnen', items: [{ label: 'kurz', duration: '2 Std', price: 'CHF 155' }, { label: 'mittel', duration: '2 Std', price: 'CHF 165' }, { label: 'lang', duration: '2 Std', price: 'CHF 185' }] },
+      { title: 'Färben ganzer Kopf & Föhnen', items: [{ label: 'kurz', duration: '1 Std 30 min', price: 'CHF 120' }, { label: 'mittel', duration: '1 Std 30 min', price: 'CHF 130' }, { label: 'lang', duration: '1 Std 30 min', price: 'CHF 150' }] },
+      { title: 'Färben ganzer Kopf', items: [{ label: 'kurz', duration: '1 Std 10 min', price: 'CHF 95' }, { label: 'mittel', duration: '1 Std 10 min', price: 'CHF 105' }, { label: 'lang', duration: '1 Std 10 min', price: 'CHF 115' }] },
+      { title: 'Ansatzfarbe, Schneiden & Föhnen', items: [{ label: 'kurz', duration: '2 Std', price: 'CHF 125' }, { label: 'mittel', duration: '2 Std', price: 'CHF 125' }, { label: 'lang', duration: '2 Std', price: 'CHF 135' }] },
+      { title: 'Ansatzfarbe & Föhnen', items: [{ label: 'kurz', duration: '1 Std 30 min', price: 'CHF 90' }, { label: 'mittel', duration: '1 Std 30 min', price: 'CHF 90' }, { label: 'lang', duration: '1 Std 30 min', price: 'CHF 100' }] },
+      { title: 'Ansatzfarbe', items: [{ label: 'kurz', duration: '1 Std 10 min', price: 'CHF 62' }, { label: 'mittel', duration: '1 Std 10 min', price: 'CHF 72' }, { label: 'lang', duration: '1 Std 10 min', price: 'CHF 62' }] },
+      { title: 'Tönung, Schnitt & Föhnen', items: [{ label: 'kurz', duration: '2 Std', price: 'CHF 125' }, { label: 'mittel', duration: '2 Std', price: 'CHF 125' }, { label: 'lang', duration: '2 Std', price: 'CHF 135' }] },
+      { title: 'Tönung & Föhnen', items: [{ label: 'kurz', duration: '1 Std 30 min', price: 'CHF 90' }, { label: 'mittel', duration: '1 Std 30 min', price: 'CHF 90' }, { label: 'lang', duration: '1 Std 30 min', price: 'CHF 100' }] },
+    ],
+  },
+  {
+    title: 'Blondierung & Strähnen',
+    groups: [
+      { title: 'Blondierung, Schnitt & Föhnen', items: [{ label: 'kurz', duration: '2 Std', price: 'CHF 155' }, { label: 'mittel', duration: '2 Std', price: 'CHF 165' }, { label: 'lang', duration: '2 Std', price: 'CHF 185' }] },
+      { title: 'Blondierung & Föhnen', items: [{ label: 'kurz', duration: '1 Std 30 min', price: 'CHF 120' }, { label: 'mittel', duration: '1 Std 30 min', price: 'CHF 130' }, { label: 'lang', duration: '1 Std 30 min', price: 'CHF 150' }] },
+      { title: 'Blondierung', items: [{ label: 'kurz', duration: '1 Std 10 min', price: 'CHF 82' }, { label: 'mittel', duration: '1 Std 10 min', price: 'CHF 92' }, { label: 'lang', duration: '1 Std 10 min', price: 'CHF 102' }] },
+      { title: 'Mèches Oberkopf, Schneiden & Föhnen', items: [{ label: 'kurz', duration: '2 Std 30 min', price: 'CHF 168' }, { label: 'mittel', duration: '2 Std 30 min', price: 'CHF 178' }, { label: 'lang', duration: '2 Std 30 min', price: 'CHF 188' }] },
+      { title: 'Mèches Oberkopf & Föhnen', items: [{ label: 'kurz', duration: '2 Std', price: 'CHF 133' }, { label: 'mittel', duration: '2 Std', price: 'CHF 143' }, { label: 'lang', duration: '2 Std', price: 'CHF 153' }] },
+      { title: 'Mèches Oberkopf', items: [{ label: 'kurz', duration: '1 Std 40 min', price: 'CHF 95' }, { label: 'mittel', duration: '1 Std 40 min', price: 'CHF 105' }, { label: 'lang', duration: '1 Std 40 min', price: 'CHF 115' }] },
+      { title: 'Ganzer Kopf, Schneiden & Föhnen', items: [{ label: 'kurz', duration: '2 Std 30 min', price: 'CHF 293' }, { label: 'mittel', duration: '2 Std 30 min', price: 'CHF 303' }, { label: 'lang', duration: '2 Std 30 min', price: 'CHF 313' }] },
+      { title: 'Ganzer Kopf & Föhnen', items: [{ label: 'kurz', duration: '2 Std', price: 'CHF 258' }, { label: 'mittel', duration: '2 Std', price: 'CHF 268' }, { label: 'lang', duration: '2 Std', price: 'CHF 278' }] },
+      { title: 'Ganzer Kopf', items: [{ label: 'kurz', duration: '1 Std 40 min', price: 'CHF 220' }, { label: 'mittel', duration: '1 Std 40 min', price: 'CHF 230' }, { label: 'lang', duration: '1 Std 40 min', price: 'CHF 240' }] },
+      { title: 'Balayage, Schneiden & Föhnen', items: [{ label: 'kurz', duration: '2 Std 30 min', price: 'CHF 293' }, { label: 'mittel', duration: '2 Std 30 min', price: 'CHF 303' }, { label: 'lang', duration: '2 Std 30 min', price: 'CHF 313' }] },
+      { title: 'Balayage & Föhnen', items: [{ label: 'kurz', duration: '2 Std', price: 'CHF 258' }, { label: 'mittel', duration: '2 Std', price: 'CHF 268' }, { label: 'lang', duration: '2 Std', price: 'CHF 278' }] },
+      { title: 'Balayage', items: [{ label: 'kurz', duration: '1 Std 40 min', price: 'CHF 220' }, { label: 'mittel', duration: '1 Std 40 min', price: 'CHF 230' }, { label: 'lang', duration: '1 Std 40 min', price: 'CHF 240' }] },
+      { title: 'Folienmèches & Föhnen', items: [{ label: 'kurz', duration: '2 Std', price: 'CHF 258' }, { label: 'mittel', duration: '2 Std', price: 'CHF 268' }, { label: 'lang', duration: '2 Std', price: 'CHF 278' }] },
+      { title: 'Folienmèches, Schneiden & Föhnen', items: [{ label: 'kurz', duration: '2 Std 30 min', price: 'CHF 293' }, { label: 'mittel', duration: '2 Std 30 min', price: 'CHF 303' }, { label: 'lang', duration: '2 Std 30 min', price: 'CHF 313' }] },
+      { title: 'Folienmèches Oberkopf', items: [{ label: 'kurz', duration: '1 Std 40 min', price: 'CHF 95' }, { label: 'mittel', duration: '1 Std 40 min', price: 'CHF 105' }, { label: 'lang', duration: '1 Std 40 min', price: 'CHF 115' }] },
+      { title: 'Folienmèches ganzer Kopf', items: [{ label: 'kurz', duration: '1 Std 40 min', price: 'CHF 220' }, { label: 'mittel', duration: '1 Std 40 min', price: 'CHF 230' }, { label: 'lang', duration: '1 Std 40 min', price: 'CHF 240' }] },
+      { title: 'Highlights', items: [{ label: 'kurz', duration: '1 Std 40 min', price: 'CHF 220' }, { label: 'mittel', duration: '1 Std 40 min', price: 'CHF 230' }, { label: 'lang', duration: '1 Std 40 min', price: 'CHF 240' }] },
+    ],
+  },
+]

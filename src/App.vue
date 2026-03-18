@@ -1,28 +1,36 @@
 <script setup>
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import landingVideo from './assets/WWVA0186.mp4'
-import teamPhoto from './assets/download (1).png'
 import heroPoster from './assets/hero.png'
 
 const loading = ref(true)
 const cutPhase = ref(false)
 const servicePage = ref(0)
-const selectedPriceCategory = ref(0)
 const mobileMenuOpen = ref(false)
 const activeSection = ref('start')
 const now = ref(new Date())
+const prefersReducedMotion = ref(false)
+const isMobileViewport = ref(false)
+const heroVideo = ref(null)
+const sectionElements = ref([])
 let servicesTimer = null
 let revealObserver = null
 let clockTimer = null
 let resizeHandler = null
 let scrollHandler = null
+let visibilityHandler = null
+let mediaQueryList = null
+let mediaQueryHandler = null
+let scrollTicking = false
+let servicesTouchStartX = 0
+let servicesTouchDeltaX = 0
 
 const navItems = [
   { id: 'start', label: 'Start', href: '#' },
   { id: 'ueber-uns', label: 'Über Uns', href: '#ueber-uns' },
   { id: 'leistungen', label: 'Leistungen', href: '#leistungen' },
-  { id: 'preisliste', label: 'Preisliste', href: '#preisliste' },
-  { id: 'team', label: 'Team', href: '#team' },
+  { id: 'preisliste', label: 'Preisliste', href: './preise.html' },
+  { id: 'team', label: 'Galerie', href: '#team' },
   { id: 'kontakt', label: 'Kontakt', href: '#kontakt' },
 ]
 
@@ -33,65 +41,6 @@ const services = [
   { icon: 'ME', title: 'Strähnen & Balayage', lines: ['Mèches, Folienmèches, Highlights', 'Balayage für weiche, natürliche Verläufe'], price: 'ab CHF 95' },
   { icon: 'GL', title: 'Glätten & Dauerwelle', lines: ['Haare glätten oder in Form bringen', 'Von smooth bis voluminöse Welle'], price: 'ab CHF 55' },
   { icon: 'BE', title: 'Beauty Extras', lines: ['Gesichtsbehandlung, Augenbrauen und Wimpern', 'Färben, zupfen, Waxing und Pflege'], price: 'ab CHF 15' },
-]
-
-const priceCategories = [
-  {
-    title: 'Damen - Haarschnitte & Styling',
-    groups: [
-      { title: 'Waschen, Schneiden & Föhnen', items: [{ label: 'kurz', duration: '1 Std', price: 'CHF 80' }, { label: 'mittel', duration: '1 Std', price: 'CHF 80' }, { label: 'lang', duration: '1 Std 15 min', price: 'CHF 88' }] },
-      { title: 'Waschen & Schneiden', items: [{ label: 'kurz', duration: '30 min', price: 'CHF 42' }, { label: 'mittel', duration: '30 min', price: 'CHF 42' }, { label: 'lang', duration: '30 min', price: 'CHF 42' }] },
-      { title: 'Waschen & Föhnen', items: [{ label: 'kurz', duration: '30 min', price: 'CHF 45' }, { label: 'mittel', duration: '40 min', price: 'CHF 45' }, { label: 'lang', duration: '45 min', price: 'CHF 55' }] },
-      { title: 'Cut & Go', items: [{ label: 'kurz', duration: '20 min', price: 'CHF 35' }, { label: 'mittel', duration: '20 min', price: 'CHF 35' }, { label: 'lang', duration: '20 min', price: 'CHF 35' }] },
-      { title: 'Weitere Stylings', items: [{ label: 'Haarschnitt', duration: '20 min', price: 'CHF 35' }, { label: 'Pony schneiden', duration: '10 min', price: 'CHF 15' }, { label: 'Haare glätten', duration: '50 min', price: 'CHF 55' }] },
-      { title: 'Dauerwelle', items: [{ label: 'kurz', duration: '1 Std 30 min', price: 'CHF 160' }, { label: 'mittel', duration: '1 Std 30 min', price: 'CHF 170' }, { label: 'lang', duration: '1 Std 30 min', price: 'CHF 190' }] },
-    ],
-  },
-  {
-    title: 'Damen - Farbe & Coloration',
-    groups: [
-      { title: 'Färben ganzer Kopf, Schneiden & Föhnen', items: [{ label: 'kurz', duration: '2 Std', price: 'CHF 155' }, { label: 'mittel', duration: '2 Std', price: 'CHF 165' }, { label: 'lang', duration: '2 Std', price: 'CHF 185' }] },
-      { title: 'Färben ganzer Kopf & Föhnen', items: [{ label: 'kurz', duration: '1 Std 30 min', price: 'CHF 120' }, { label: 'mittel', duration: '1 Std 30 min', price: 'CHF 130' }, { label: 'lang', duration: '1 Std 30 min', price: 'CHF 150' }] },
-      { title: 'Färben ganzer Kopf', items: [{ label: 'kurz', duration: '1 Std 10 min', price: 'CHF 95' }, { label: 'mittel', duration: '1 Std 10 min', price: 'CHF 105' }, { label: 'lang', duration: '1 Std 10 min', price: 'CHF 115' }] },
-      { title: 'Ansatzfarbe, Schneiden & Föhnen', items: [{ label: 'kurz', duration: '2 Std', price: 'CHF 125' }, { label: 'mittel', duration: '2 Std', price: 'CHF 125' }, { label: 'lang', duration: '2 Std', price: 'CHF 135' }] },
-      { title: 'Ansatzfarbe & Föhnen', items: [{ label: 'kurz', duration: '1 Std 30 min', price: 'CHF 90' }, { label: 'mittel', duration: '1 Std 30 min', price: 'CHF 90' }, { label: 'lang', duration: '1 Std 30 min', price: 'CHF 100' }] },
-      { title: 'Ansatzfarbe', items: [{ label: 'kurz', duration: '1 Std 10 min', price: 'CHF 62' }, { label: 'mittel', duration: '1 Std 10 min', price: 'CHF 72' }, { label: 'lang', duration: '1 Std 10 min', price: 'CHF 62' }] },
-      { title: 'Tönung, Schnitt & Föhnen', items: [{ label: 'kurz', duration: '2 Std', price: 'CHF 125' }, { label: 'mittel', duration: '2 Std', price: 'CHF 125' }, { label: 'lang', duration: '2 Std', price: 'CHF 135' }] },
-      { title: 'Tönung & Föhnen', items: [{ label: 'kurz', duration: '1 Std 30 min', price: 'CHF 90' }, { label: 'mittel', duration: '1 Std 30 min', price: 'CHF 90' }, { label: 'lang', duration: '1 Std 30 min', price: 'CHF 100' }] },
-    ],
-  },
-  {
-    title: 'Blondierung & Strähnen',
-    groups: [
-      { title: 'Blondierung, Schnitt & Föhnen', items: [{ label: 'kurz', duration: '2 Std', price: 'CHF 155' }, { label: 'mittel', duration: '2 Std', price: 'CHF 165' }, { label: 'lang', duration: '2 Std', price: 'CHF 185' }] },
-      { title: 'Blondierung & Föhnen', items: [{ label: 'kurz', duration: '1 Std 30 min', price: 'CHF 120' }, { label: 'mittel', duration: '1 Std 30 min', price: 'CHF 130' }, { label: 'lang', duration: '1 Std 30 min', price: 'CHF 150' }] },
-      { title: 'Blondierung', items: [{ label: 'kurz', duration: '1 Std 10 min', price: 'CHF 82' }, { label: 'mittel', duration: '1 Std 10 min', price: 'CHF 92' }, { label: 'lang', duration: '1 Std 10 min', price: 'CHF 102' }] },
-      { title: 'Mèches Oberkopf, Schneiden & Föhnen', items: [{ label: 'kurz', duration: '2 Std 30 min', price: 'CHF 168' }, { label: 'mittel', duration: '2 Std 30 min', price: 'CHF 178' }, { label: 'lang', duration: '2 Std 30 min', price: 'CHF 188' }] },
-      { title: 'Mèches Oberkopf & Föhnen', items: [{ label: 'kurz', duration: '2 Std', price: 'CHF 133' }, { label: 'mittel', duration: '2 Std', price: 'CHF 143' }, { label: 'lang', duration: '2 Std', price: 'CHF 153' }] },
-      { title: 'Mèches Oberkopf', items: [{ label: 'kurz', duration: '1 Std 40 min', price: 'CHF 95' }, { label: 'mittel', duration: '1 Std 40 min', price: 'CHF 105' }, { label: 'lang', duration: '1 Std 40 min', price: 'CHF 115' }] },
-      { title: 'Ganzer Kopf, Schneiden & Föhnen', items: [{ label: 'kurz', duration: '2 Std 30 min', price: 'CHF 293' }, { label: 'mittel', duration: '2 Std 30 min', price: 'CHF 303' }, { label: 'lang', duration: '2 Std 30 min', price: 'CHF 313' }] },
-      { title: 'Ganzer Kopf & Föhnen', items: [{ label: 'kurz', duration: '2 Std', price: 'CHF 258' }, { label: 'mittel', duration: '2 Std', price: 'CHF 268' }, { label: 'lang', duration: '2 Std', price: 'CHF 278' }] },
-      { title: 'Ganzer Kopf', items: [{ label: 'kurz', duration: '1 Std 40 min', price: 'CHF 220' }, { label: 'mittel', duration: '1 Std 40 min', price: 'CHF 230' }, { label: 'lang', duration: '1 Std 40 min', price: 'CHF 240' }] },
-      { title: 'Balayage, Schneiden & Föhnen', items: [{ label: 'kurz', duration: '2 Std 30 min', price: 'CHF 293' }, { label: 'mittel', duration: '2 Std 30 min', price: 'CHF 303' }, { label: 'lang', duration: '2 Std 30 min', price: 'CHF 313' }] },
-      { title: 'Balayage & Föhnen', items: [{ label: 'kurz', duration: '2 Std', price: 'CHF 258' }, { label: 'mittel', duration: '2 Std', price: 'CHF 268' }, { label: 'lang', duration: '2 Std', price: 'CHF 278' }] },
-      { title: 'Balayage', items: [{ label: 'kurz', duration: '1 Std 40 min', price: 'CHF 220' }, { label: 'mittel', duration: '1 Std 40 min', price: 'CHF 230' }, { label: 'lang', duration: '1 Std 40 min', price: 'CHF 240' }] },
-      { title: 'Folienmèches & Föhnen', items: [{ label: 'kurz', duration: '2 Std', price: 'CHF 258' }, { label: 'mittel', duration: '2 Std', price: 'CHF 268' }, { label: 'lang', duration: '2 Std', price: 'CHF 278' }] },
-      { title: 'Folienmèches, Schneiden & Föhnen', items: [{ label: 'kurz', duration: '2 Std 30 min', price: 'CHF 293' }, { label: 'mittel', duration: '2 Std 30 min', price: 'CHF 303' }, { label: 'lang', duration: '2 Std 30 min', price: 'CHF 313' }] },
-      { title: 'Folienmèches Oberkopf', items: [{ label: 'kurz', duration: '1 Std 40 min', price: 'CHF 95' }, { label: 'mittel', duration: '1 Std 40 min', price: 'CHF 105' }, { label: 'lang', duration: '1 Std 40 min', price: 'CHF 115' }] },
-      { title: 'Folienmèches ganzer Kopf', items: [{ label: 'kurz', duration: '1 Std 40 min', price: 'CHF 220' }, { label: 'mittel', duration: '1 Std 40 min', price: 'CHF 230' }, { label: 'lang', duration: '1 Std 40 min', price: 'CHF 240' }] },
-      { title: 'Highlights', items: [{ label: 'kurz', duration: '1 Std 40 min', price: 'CHF 220' }, { label: 'mittel', duration: '1 Std 40 min', price: 'CHF 230' }, { label: 'lang', duration: '1 Std 40 min', price: 'CHF 240' }] },
-    ],
-  },
-  {
-    title: 'Beauty, Männer & Kinder',
-    groups: [
-      { title: 'Gesichtsbehandlungen', items: [{ label: 'Reinigung', duration: '25 min', price: 'CHF 25' }, { label: 'Maske', duration: '-', price: 'CHF 25' }] },
-      { title: 'Augenbrauen & Wimpern', items: [{ label: 'Augenbrauen färben & zupfen', duration: '20 min', price: 'CHF 30' }, { label: 'Augenbrauen zupfen', duration: '15 min', price: 'CHF 15' }, { label: 'Augenbrauen färben', duration: '15 min', price: 'CHF 15' }, { label: 'Wimpern färben', duration: '15 min', price: 'CHF 15' }, { label: 'Augenbrauen Waxing', duration: '15 min', price: 'CHF 15' }] },
-      { title: 'Männer', items: [{ label: 'Schneiden', duration: '-', price: 'CHF 28' }, { label: 'Waschen, Schneiden & Föhnen', duration: '-', price: 'CHF 35' }, { label: 'Bart', duration: '-', price: 'CHF 20' }, { label: 'Haare und Bart', duration: '-', price: 'CHF 43' }, { label: 'Nassrasur', duration: '-', price: 'CHF 20' }, { label: 'Farbe', duration: '-', price: 'CHF 35' }, { label: 'Haarentfernen mit Wax', duration: '-', price: 'CHF 10' }] },
-      { title: 'Kinder', items: [{ label: 'Kinder bis 12 Jahren', duration: '-', price: 'CHF 25' }, { label: 'Mädchen', duration: '-', price: 'CHF 20' }, { label: 'Jungen', duration: '-', price: 'CHF 20' }] },
-      { title: 'VIP Men Paket', items: [{ label: 'VIP Men Paket', duration: 'inkl. Waschen, Schneiden, Bart, Augenbrauen zupfen, Wax, Gesichtsmaske, Reinigung', price: 'CHF 75' }] },
-    ],
-  },
 ]
 
 const openingHours = [
@@ -105,6 +54,45 @@ const openingHours = [
 ]
 
 const googleRating = { score: '4.9', stars: '★★★★★', total: 93 }
+
+const galleryItems = [
+  {
+    title: 'Balayage Vorher / Nachher',
+    type: 'Vorher / Nachher',
+    image: '/images/galerie/vorher-nachher-balayage.svg',
+    alt: 'Vorher-Nachher Balayage bei Alis Coiffeur',
+  },
+  {
+    title: 'Kurzhaarschnitt Vorher / Nachher',
+    type: 'Vorher / Nachher',
+    image: '/images/galerie/vorher-nachher-kurzhaar.svg',
+    alt: 'Vorher-Nachher Kurzhaarschnitt bei Alis Coiffeur',
+  },
+  {
+    title: 'Damen Cut & Styling',
+    type: 'Haarschnitt',
+    image: '/images/galerie/haarschnitt-damen.svg',
+    alt: 'Damen Cut und Styling bei Alis Coiffeur',
+  },
+  {
+    title: 'Herren Fade',
+    type: 'Haarschnitt',
+    image: '/images/galerie/haarschnitt-herren.svg',
+    alt: 'Herren Fade und Styling bei Alis Coiffeur',
+  },
+  {
+    title: 'Langhaar Styling',
+    type: 'Haarschnitt',
+    image: '/images/galerie/haarschnitt-langhaar.svg',
+    alt: 'Langhaar Styling bei Alis Coiffeur',
+  },
+  {
+    title: 'Farbe & Glanz Finish',
+    type: 'Haarschnitt',
+    image: '/images/galerie/haarschnitt-color.svg',
+    alt: 'Color Finish bei Alis Coiffeur',
+  },
+]
 
 const currentDayIndex = computed(() => {
   const weekday = now.value.getDay()
@@ -131,12 +119,28 @@ const isClosingSoon = computed(() => {
   return closeHour * 60 + closeMinute - currentTimeInMinutes.value <= 60
 })
 
-const shopStatusLabel = computed(() => (isOpenNow.value ? 'Jetzt geöffnet' : 'Gerade geschlossen'))
+const isOpeningSoon = computed(() => {
+  const schedule = todaySchedule.value
+  if (!schedule || schedule.closed || !schedule.open || isOpenNow.value) return false
+  const [openHour, openMinute] = schedule.open.split(':').map(Number)
+  const openingMinutes = openHour * 60 + openMinute
+  const minutesUntilOpen = openingMinutes - currentTimeInMinutes.value
+  return minutesUntilOpen > 0 && minutesUntilOpen <= 60
+})
+
+const shopStatusLabel = computed(() => {
+  if (isClosingSoon.value) return 'Schliesst demnächst'
+  if (isOpeningSoon.value) return 'Öffnet demnächst'
+  if (isOpenNow.value) return 'Jetzt geöffnet!'
+  return 'Gerade geschlossen'
+})
 
 const shopStatusDetail = computed(() => {
   const schedule = todaySchedule.value
   const nextDay = openingHours[(currentDayIndex.value + 1) % openingHours.length]
   if (!schedule) return 'Öffnungszeiten auf Anfrage'
+  if (isClosingSoon.value) return `Heute noch bis ${schedule.close}`
+  if (isOpeningSoon.value) return `Heute ab ${schedule.open}`
   if (isOpenNow.value) return `Heute bis ${schedule.close} geöffnet`
   if (schedule.closed) return nextDay?.closed ? `${schedule.day}: geschlossen` : `Öffnet ${nextDay?.shortDay} um ${nextDay?.open}`
   if (currentTimeInMinutes.value < Number(schedule.open.split(':')[0]) * 60 + Number(schedule.open.split(':')[1])) {
@@ -156,8 +160,7 @@ const serviceGroups = computed(() =>
 )
 
 const visibleServices = computed(() => serviceGroups.value[servicePage.value] ?? [])
-const currentPriceCategory = computed(() => priceCategories[selectedPriceCategory.value] ?? priceCategories[0])
-const remainingPriceCategories = computed(() => Math.max(priceCategories.length - 1, 0))
+const shouldUseHeroVideo = computed(() => !prefersReducedMotion.value)
 
 const previousServices = () => {
   servicePage.value = (servicePage.value - 1 + servicePages.value) % servicePages.value
@@ -167,8 +170,31 @@ const nextServices = () => {
   servicePage.value = (servicePage.value + 1) % servicePages.value
 }
 
-const selectPriceCategory = (index) => {
-  selectedPriceCategory.value = index
+const handleServicesTouchStart = (event) => {
+  servicesTouchStartX = event.touches[0]?.clientX ?? 0
+  servicesTouchDeltaX = 0
+}
+
+const handleServicesTouchMove = (event) => {
+  servicesTouchDeltaX = (event.touches[0]?.clientX ?? 0) - servicesTouchStartX
+}
+
+const handleServicesTouchEnd = () => {
+  if (Math.abs(servicesTouchDeltaX) < 48) {
+    servicesTouchStartX = 0
+    servicesTouchDeltaX = 0
+    return
+  }
+
+  if (servicesTouchDeltaX < 0) {
+    nextServices()
+  } else {
+    previousServices()
+  }
+
+  startServicesAutoplay()
+  servicesTouchStartX = 0
+  servicesTouchDeltaX = 0
 }
 
 const closeMobileMenu = () => {
@@ -179,28 +205,67 @@ const toggleMobileMenu = () => {
   mobileMenuOpen.value = !mobileMenuOpen.value
 }
 
+const collectSectionElements = () => {
+  sectionElements.value = navItems
+    .filter((item) => item.id !== 'start')
+    .map((item) => ({ id: item.id, element: document.getElementById(item.id) }))
+    .filter((entry) => entry.element)
+}
+
 const syncActiveSection = () => {
   if (typeof window === 'undefined') return
   const threshold = window.innerHeight * 0.35
   let current = 'start'
-  for (const item of navItems) {
-    if (item.id === 'start') continue
-    const section = document.getElementById(item.id)
-    if (section && section.getBoundingClientRect().top <= threshold) current = item.id
+  for (const entry of sectionElements.value) {
+    if (entry.element && entry.element.getBoundingClientRect().top <= threshold) current = entry.id
   }
   if (window.scrollY < 120) current = 'start'
-  activeSection.value = current
+  if (activeSection.value !== current) activeSection.value = current
+}
+
+const syncMotionPreference = () => {
+  prefersReducedMotion.value = Boolean(mediaQueryList?.matches)
+}
+
+const syncViewportState = () => {
+  if (typeof window === 'undefined') return
+  isMobileViewport.value = window.innerWidth <= 640
+}
+
+const syncHeroPlayback = async () => {
+  if (typeof window === 'undefined') return
+  const videoElement = heroVideo.value
+  if (!videoElement) return
+
+  if (!shouldUseHeroVideo.value || document.hidden) {
+    videoElement.pause()
+    return
+  }
+
+  try {
+    await videoElement.play()
+  } catch {
+    // Autoplay can be blocked transiently; the poster image still covers the hero.
+  }
 }
 
 const startServicesAutoplay = () => {
   if (servicesTimer) window.clearInterval(servicesTimer)
+  if (prefersReducedMotion.value || document.hidden) return
   servicesTimer = window.setInterval(() => {
     nextServices()
-  }, 6500)
+  }, 4500)
 }
 
 const setupRevealAnimations = async () => {
   await nextTick()
+  const revealElements = Array.from(document.querySelectorAll('[data-reveal]'))
+  if (prefersReducedMotion.value) {
+    revealElements.forEach((element) => element.classList.add('is-revealed'))
+    revealObserver?.disconnect()
+    revealObserver = null
+    return
+  }
   if (!revealObserver) {
     revealObserver = new IntersectionObserver(
       (entries) => {
@@ -211,16 +276,31 @@ const setupRevealAnimations = async () => {
           }
         })
       },
-      { threshold: 0.18, rootMargin: '0px 0px -8% 0px' },
+      isMobileViewport.value
+        ? { threshold: 0.08, rootMargin: '0px 0px -4% 0px' }
+        : { threshold: 0.18, rootMargin: '0px 0px -8% 0px' },
     )
   }
-  document.querySelectorAll('[data-reveal]').forEach((element) => {
+  revealElements.forEach((element) => {
     const htmlElement = element
     if (!htmlElement.classList.contains('is-revealed')) revealObserver?.observe(htmlElement)
   })
 }
 
 onMounted(() => {
+  syncViewportState()
+  mediaQueryList = window.matchMedia('(prefers-reduced-motion: reduce)')
+  mediaQueryHandler = () => {
+    syncMotionPreference()
+    syncHeroPlayback()
+    startServicesAutoplay()
+  }
+  syncMotionPreference()
+  if (mediaQueryList.addEventListener) {
+    mediaQueryList.addEventListener('change', mediaQueryHandler)
+  } else {
+    mediaQueryList.addListener(mediaQueryHandler)
+  }
   if ('scrollRestoration' in window.history) {
     window.history.scrollRestoration = 'manual'
   }
@@ -230,21 +310,36 @@ onMounted(() => {
     window.setTimeout(() => {
       loading.value = false
       window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
-    }, 800)
-  }, 1800)
+      collectSectionElements()
+      setupRevealAnimations()
+      syncHeroPlayback()
+    }, isMobileViewport.value ? 900 : 800)
+  }, prefersReducedMotion.value ? 900 : isMobileViewport.value ? 1550 : 1800)
   startServicesAutoplay()
-  setupRevealAnimations()
   clockTimer = window.setInterval(() => {
     now.value = new Date()
   }, 60000)
   resizeHandler = () => {
+    syncViewportState()
     if (window.innerWidth > 640) closeMobileMenu()
+    collectSectionElements()
+    syncHeroPlayback()
   }
   scrollHandler = () => {
-    syncActiveSection()
+    if (scrollTicking) return
+    scrollTicking = true
+    window.requestAnimationFrame(() => {
+      syncActiveSection()
+      scrollTicking = false
+    })
+  }
+  visibilityHandler = () => {
+    syncHeroPlayback()
+    startServicesAutoplay()
   }
   window.addEventListener('resize', resizeHandler)
   window.addEventListener('scroll', scrollHandler, { passive: true })
+  document.addEventListener('visibilitychange', visibilityHandler)
   syncActiveSection()
 })
 
@@ -254,11 +349,15 @@ onBeforeUnmount(() => {
   if (revealObserver) revealObserver.disconnect()
   if (resizeHandler) window.removeEventListener('resize', resizeHandler)
   if (scrollHandler) window.removeEventListener('scroll', scrollHandler)
+  if (visibilityHandler) document.removeEventListener('visibilitychange', visibilityHandler)
+  if (mediaQueryList && mediaQueryHandler) {
+    if (mediaQueryList.removeEventListener) {
+      mediaQueryList.removeEventListener('change', mediaQueryHandler)
+    } else {
+      mediaQueryList.removeListener(mediaQueryHandler)
+    }
+  }
   document.body.style.overflow = ''
-})
-
-watch(servicePage, () => {
-  setupRevealAnimations()
 })
 
 watch(mobileMenuOpen, (isOpen) => {
@@ -333,8 +432,8 @@ watch(mobileMenuOpen, (isOpen) => {
         </a>
       </nav>
       <div class="nav-right">
-        <a class="cta-btn" href="#kontakt" @click="closeMobileMenu">
-          <span>Jetzt Kontakt</span>
+        <a class="cta-btn" href="tel:+41447616222" @click="closeMobileMenu">
+          <span>Jetzt anrufen</span>
           <span aria-hidden="true">-></span>
         </a>
       </div>
@@ -342,9 +441,30 @@ watch(mobileMenuOpen, (isOpen) => {
 
     <section class="page-content" :class="{ 'is-visible': !loading }">
       <section class="landing-hero">
-        <video class="bg-video" autoplay muted loop playsinline preload="metadata" :poster="heroPoster" aria-hidden="true">
+        <video
+          v-if="shouldUseHeroVideo"
+          ref="heroVideo"
+          class="bg-video"
+          autoplay
+          muted
+          loop
+          playsinline
+          preload="metadata"
+          :poster="heroPoster"
+          aria-hidden="true"
+        >
           <source :src="landingVideo" type="video/mp4" />
         </video>
+        <img
+          v-else
+          class="bg-poster"
+          :src="heroPoster"
+          alt=""
+          aria-hidden="true"
+          fetchpriority="high"
+          loading="eager"
+          decoding="async"
+        />
         <div class="bg-overlay" aria-hidden="true"></div>
 
         <section class="hero-content">
@@ -353,15 +473,18 @@ watch(mobileMenuOpen, (isOpen) => {
             <span class="hero-rating-stars" aria-label="4.9 von 5 Sternen">{{ googleRating.stars }}</span>
             <span class="hero-rating-total">({{ googleRating.total }} Google-Bewertungen)</span>
           </div>
-          <h1 class="hero-title">Mehr Style. <br /> Mehr Selbstvertrauen.</h1>
+          <h1 class="hero-title">
+            <span>Mehr Style.</span>
+            <span>Mehr Selbstvertrauen.</span>
+          </h1>
           <div class="hero-line"></div>
-          <p class="hero-subtitle">Coiffeur ALIS.</p>
+          <p class="hero-subtitle">ALIS Coiffeur.</p>
           <p class="hero-description">
             Damen, Herren, Farbe, Styling und Beauty an einem Ort. Modern, herzlich und direkt in
             Obfelden.
           </p>
           <div class="hero-actions">
-            <a class="hero-primary-btn" href="#kontakt">Termin anfragen</a>
+            <a class="hero-primary-btn" href="./preise.html">Preise ansehen</a>
             <a class="hero-secondary-btn" href="tel:+41447616222">Jetzt anrufen</a>
           </div>
           <div class="hero-facts" data-reveal>
@@ -432,7 +555,14 @@ watch(mobileMenuOpen, (isOpen) => {
           </div>
         </div>
 
-        <div class="services-slider" data-reveal>
+        <div
+          class="services-slider"
+          data-reveal
+          @touchstart.passive="handleServicesTouchStart"
+          @touchmove.passive="handleServicesTouchMove"
+          @touchend="handleServicesTouchEnd"
+          @touchcancel="handleServicesTouchEnd"
+        >
           <Transition name="services-swipe" mode="out-in">
             <div :key="servicePage" class="services-grid">
               <article
@@ -448,7 +578,7 @@ watch(mobileMenuOpen, (isOpen) => {
                 </div>
 
                 <div class="service-footer">
-                  <a href="#">Mehr erfahren</a>
+                  <a href="./preise.html">Zur Preisliste</a>
                 </div>
               </article>
             </div>
@@ -468,83 +598,52 @@ watch(mobileMenuOpen, (isOpen) => {
         </div>
       </section>
 
-      <section id="preisliste" class="price-section" data-reveal>
-        <div class="price-head" data-reveal>
-          <p class="price-kicker">Transparente Preise</p>
-          <h2>Preisliste</h2>
-          <p class="price-intro">
-            Alle Leistungen auf einen Blick. Zeiten sind Richtwerte und können je nach Haarlänge,
-            Aufwand und Wunschlook leicht variieren.
-          </p>
-          <p class="price-mobile-note">Preisliste +{{ remainingPriceCategories }} weitere</p>
-        </div>
-
-        <div class="price-shell" data-reveal>
-          <div class="price-tabs" aria-label="Preisliste Kategorien">
-            <button
-              v-for="(category, index) in priceCategories"
-              :key="category.title"
-              type="button"
-              class="price-tab"
-              :class="{ 'is-active': index === selectedPriceCategory }"
-              @click="selectPriceCategory(index)"
-            >
-              {{ category.title }}
-            </button>
-          </div>
-
-          <section class="price-category">
-            <div class="price-category-head">
-              <h3>{{ currentPriceCategory.title }}</h3>
-              <p>{{ currentPriceCategory.groups.length }} Preisblöcke in dieser Kategorie</p>
-            </div>
-
-            <div class="price-groups">
-              <article
-                v-for="(group, index) in currentPriceCategory.groups"
-                :key="group.title"
-                class="price-card"
-                :class="{ 'is-centered': currentPriceCategory.groups.length % 2 === 1 && index === currentPriceCategory.groups.length - 1 }"
-              >
-                <div class="price-card-head">
-                  <h4>{{ group.title }}</h4>
-                  <p>{{ group.items.length }} Positionen</p>
-                </div>
-
-                <div class="price-table-head">
-                  <span>Leistung</span>
-                  <span>Dauer</span>
-                  <span>Preis</span>
-                </div>
-
-                <div class="price-rows">
-                  <div v-for="item in group.items" :key="`${group.title}-${item.label}-${item.price}`" class="price-row">
-                    <div class="price-meta">
-                      <span class="price-label">{{ item.label }}</span>
-                    </div>
-                    <span class="price-duration">{{ item.duration }}</span>
-                    <span class="price-value">{{ item.price }}</span>
-                  </div>
-                </div>
-              </article>
-            </div>
-          </section>
-        </div>
-      </section>
-
       <section id="team" class="team-section" data-reveal>
         <div class="team-copy" data-reveal>
-          <p class="team-kicker">Unser Team</p>
-          <h2>Styling mit Persönlichkeit</h2>
+          <p class="team-kicker">Unsere Galerie</p>
+          <h2>Vorher, Nachher und frische Looks</h2>
           <p class="team-intro">
-            Statt einzelner Karten steht hier euer gemeinsamer Auftritt im Fokus. Das Team wird als
-            ein starkes Ganzes gezeigt.
+            Eine kuratierte Mini-Galerie mit drei starken Looks wirkt edler und moderner als viele kleine Bilder.
           </p>
+          <p class="gallery-mobile-hint">Auf Mobile kannst du durch die Galerie wischen.</p>
         </div>
 
-        <figure class="team-figure" data-reveal>
-          <img :src="teamPhoto" alt="Gesamtbild vom Team von Alis Coiffeur" class="team-image" loading="lazy" decoding="async" />
-        </figure>
+                <div class="gallery-shell" data-reveal>
+          <div class="gallery-grid">
+            <article
+              v-for="(item, index) in galleryItems.slice(0, 3)"
+              :key="item.title"
+              :class="['gallery-card', { 'is-featured': index === 0 }]"
+            >
+              <div class="gallery-card-media">
+                <img
+                  :src="item.image"
+                  :alt="item.alt"
+                  class="gallery-image"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </div>
+              <div class="gallery-card-copy">
+                <span class="gallery-badge">{{ item.type }}</span>
+                <h3>{{ item.title }}</h3>
+                <p>Inspirationen aus dem Salon mit modernen Schnitten, Farbe und frischen Finishes.</p>
+              </div>
+            </article>
+          </div>
+
+          <div class="gallery-cta" data-reveal>
+            <p>Noch mehr Looks, Umstylings und aktuelle Ergebnisse findest du auf Instagram.</p>
+            <a
+              class="gallery-cta-btn"
+              href="https://www.instagram.com/alis_coiffeur_obfelden/"
+              target="_blank"
+              rel="noreferrer"
+            >
+              Mehr Bilder auf Instagram
+            </a>
+          </div>
+        </div>
       </section>
 
       <section class="reviews-section" data-reveal>
@@ -585,11 +684,14 @@ watch(mobileMenuOpen, (isOpen) => {
             <p class="contact-kicker">Kontakt & Zeiten</p>
             <h2>Wir sind für dich da</h2>
             <p class="contact-intro">
-              Ruf uns an, melde dich für eine Beratung oder plane deinen nächsten Termin direkt mit
-              uns im Salon.
+              Bei Ali läuft die Terminvergabe telefonisch. Ruf uns einfach an, und wir planen deinen
+              Termin direkt mit dir.
             </p>
 
-            <div class="contact-status" :class="{ 'is-open': isOpenNow, 'is-closed': !isOpenNow, 'is-closing-soon': isClosingSoon }">
+            <div
+              class="contact-status"
+              :class="{ 'is-open': isOpenNow, 'is-closed': !isOpenNow, 'is-closing-soon': isClosingSoon, 'is-opening-soon': isOpeningSoon }"
+            >
               <span class="contact-status-dot" aria-hidden="true"></span>
               <div>
                 <strong>{{ shopStatusLabel }}</strong>
@@ -600,30 +702,29 @@ watch(mobileMenuOpen, (isOpen) => {
             <div class="contact-actions">
               <a class="contact-action-btn is-primary" href="tel:+41447616222">Jetzt anrufen</a>
               <a class="contact-action-btn" href="https://www.google.com/maps/dir/?api=1&destination=Ottenbacherstrasse+2a,+8912+Obfelden" target="_blank" rel="noreferrer">Route planen</a>
-              <a class="contact-action-btn" href="https://www.instagram.com/alis_coiffeur_obfelden/" target="_blank" rel="noreferrer">Instagram</a>
             </div>
 
             <div class="contact-info-grid">
               <article class="contact-card">
                 <span class="contact-card-label">Telefon</span>
-                <a href="tel:+41447616222">044 761 62 22</a>
+                <p>044 761 62 22</p>
               </article>
 
               <article class="contact-card">
                 <span class="contact-card-label">Standort</span>
-                <a href="https://www.google.com/maps/search/?api=1&query=Ottenbacherstrasse+2a,+8912+Obfelden" target="_blank" rel="noreferrer">
+                <p>
                   Ottenbacherstrasse 2a, 8912 Obfelden
-                </a>
+                </p>
               </article>
 
               <article class="contact-card">
-                <span class="contact-card-label">Instagram</span>
-                <a href="https://www.instagram.com/alis_coiffeur_obfelden/" target="_blank" rel="noreferrer">alis_coiffeur_obfelden</a>
+                <span class="contact-card-label">Terminvergabe</span>
+                <p>Nur telefonisch</p>
               </article>
 
               <article class="contact-card">
-                <span class="contact-card-label">Online buchen</span>
-                <a href="#kontakt">Termin bequem anfragen</a>
+                <span class="contact-card-label">Heute</span>
+                <p>{{ shopStatusDetail }}</p>
               </article>
             </div>
           </div>
@@ -631,7 +732,7 @@ watch(mobileMenuOpen, (isOpen) => {
           <div class="hours-panel" data-reveal>
             <div class="hours-head">
               <p class="hours-kicker">Öffnungszeiten</p>
-              <h3>Links Infos, rechts Zeiten</h3>
+              <h3>Unsere Zeiten auf einen Blick</h3>
             </div>
 
             <div class="hours-list">
@@ -654,10 +755,722 @@ watch(mobileMenuOpen, (isOpen) => {
           </div>
         </div>
       </section>
+
+      <footer class="site-footer">
+        <div class="site-footer-box">
+          <p>© Alis Coiffeur Obfelden 2025</p>
+        </div>
+      </footer>
     </section>
   </main>
 </template>
 
 <style scoped>
 @import "./restored.css";
+
+:global(html),
+:global(body) {
+  max-width: 100%;
+  overflow-x: hidden;
+  background: #000;
+}
+
+.hero-title span {
+  display: block;
+}
+
+.contact-status.is-opening-soon .contact-status-dot {
+  background: #d98b2b;
+  animation-duration: 1.4s;
+  box-shadow: 0 0 0 8px rgba(217, 139, 43, 0.16);
+}
+
+.bg-poster {
+  object-fit: cover;
+  object-position: center;
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  transition: opacity 0.3s ease;
+}
+
+.bg-video {
+  opacity: 1;
+}
+
+.services-section {
+  min-height: auto;
+  padding-top: 3rem;
+  padding-bottom: 3.5rem;
+}
+
+.site-root {
+  overflow-x: clip;
+}
+
+.services-slider {
+  touch-action: pan-y;
+}
+
+.service-card {
+  min-height: 380px;
+  padding: 2rem 1.5rem 1.8rem;
+}
+
+.price-section {
+  min-height: auto;
+  margin-top: 0;
+  padding-top: 2.5rem;
+}
+
+.site-footer {
+  margin-top: 0;
+  padding: 1.1rem 1rem 1.4rem;
+  border-top: 1px solid rgba(215, 183, 103, 0.18);
+  background: linear-gradient(180deg, rgba(8, 8, 8, 0.92), rgba(4, 4, 4, 0.98));
+}
+
+.site-footer-box {
+  width: min(100%, 1180px);
+  margin: 0 auto;
+  padding: 0.2rem 0 0;
+}
+
+.site-footer-box p {
+  margin: 0;
+  color: #fff4d6;
+  text-align: center;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+[data-reveal] {
+  opacity: 0;
+  transform: translate3d(0, 18px, 0);
+  transition: opacity 0.38s ease-out, transform 0.38s ease-out;
+}
+
+[data-reveal].is-revealed {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+}
+
+
+.team-section {
+  min-height: auto;
+}
+
+.gallery-shell {
+  width: min(100%, 1180px);
+  margin: 0 auto;
+}
+
+.gallery-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 0.9fr);
+  gap: 1.1rem;
+}
+
+.gallery-card.is-featured {
+  grid-row: span 2;
+}
+
+.gallery-card.is-featured .gallery-card-media {
+  aspect-ratio: 4 / 5.8;
+}
+
+.gallery-card {
+  overflow: hidden;
+  border: 1px solid rgba(215, 183, 103, 0.18);
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at top right, rgba(215, 183, 103, 0.14), transparent 26%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03)),
+    rgba(14, 14, 14, 0.95);
+  box-shadow: 0 20px 44px rgba(0, 0, 0, 0.32), inset 0 0 0 1px rgba(215, 183, 103, 0.06);
+}
+
+.gallery-card-media {
+  aspect-ratio: 4 / 5;
+  overflow: hidden;
+  background: #121212;
+}
+
+.gallery-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.gallery-card-copy {
+  display: grid;
+  gap: 0.65rem;
+  padding: 1rem 1rem 1.15rem;
+}
+
+.gallery-badge {
+  width: fit-content;
+  padding: 0.38rem 0.7rem;
+  border: 1px solid rgba(215, 183, 103, 0.26);
+  border-radius: 999px;
+  color: #c89a49;
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  background: rgba(215, 183, 103, 0.08);
+}
+
+.gallery-card-copy h3 {
+  margin: 0;
+  color: #f2e6c7;
+  font-family: Oswald, sans-serif;
+  font-size: clamp(1.5rem, 2.3vw, 2rem);
+  line-height: 1.05;
+}
+
+.gallery-card-copy p {
+  margin: 0;
+  color: #c8b588;
+  font-size: 0.98rem;
+  line-height: 1.55;
+}
+
+.gallery-cta {
+  display: grid;
+  justify-items: center;
+  gap: 1rem;
+  margin-top: 1.6rem;
+  text-align: center;
+}
+
+.gallery-mobile-hint {
+  display: none;
+}
+
+.gallery-cta p {
+  margin: 0;
+  max-width: 36rem;
+  color: #e5d4ad;
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+.gallery-cta-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 54px;
+  padding: 0.9rem 1.35rem;
+  border: 1px solid rgba(215, 183, 103, 0.42);
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(215, 183, 103, 0.2), rgba(184, 134, 54, 0.32));
+  color: #fff4d6;
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-decoration: none;
+  transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+}
+
+.gallery-cta-btn:hover {
+  transform: translateY(-2px);
+  border-color: rgba(215, 183, 103, 0.7);
+  background: linear-gradient(135deg, rgba(215, 183, 103, 0.28), rgba(184, 134, 54, 0.42));
+}
+
+.about-ornament-top {
+  top: 7rem;
+  right: 7rem;
+}
+
+.about-ornament-bottom {
+  bottom: 7rem;
+  left: 7rem;
+}
+
+.about-scissors {
+  opacity: 0.22;
+  width: 12.5rem;
+  height: 12.5rem;
+  height: 12.5rem;
+}
+
+@media (width<=900px) {
+  .gallery-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .gallery-card.is-featured {
+    grid-column: 1 / -1;
+    grid-row: auto;
+  }
+
+  .gallery-card.is-featured .gallery-card-media {
+    aspect-ratio: 16 / 10;
+  }
+}
+
+@media (width<=640px) {
+  .nav-wrap,
+  .nav-toggle,
+  .hero-secondary-btn,
+  .nav-menu {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  .bg-video {
+    transform: none;
+    will-change: auto;
+  }
+
+  .about-section,
+  .services-section,
+  .price-section,
+  .team-section,
+  .reviews-section,
+  .contact-section {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .about-section,
+  .services-section,
+  .price-section,
+  .team-section,
+  .reviews-section {
+    min-height: 100svh;
+  }
+
+  .about-section {
+    min-height: 100svh;
+    padding-top: 4rem;
+    padding-bottom: 4rem;
+    align-items: center;
+  }
+
+  .hero-content {
+    width: min(100% - 2rem, 22rem);
+    inset: auto 1rem 2rem;
+    text-align: left;
+    align-items: flex-start;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .hero-title {
+    max-width: 8.5ch;
+    font-size: clamp(1.9rem, 8.2vw, 2.6rem);
+    line-height: 0.96;
+  }
+
+  .hero-title span {
+    display: block;
+  }
+
+  .hero-line {
+    width: 96px;
+    margin-top: 0.65rem;
+  }
+
+  .hero-description {
+    max-width: 21rem;
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+
+  .hero-actions {
+    width: 100%;
+    gap: 0.6rem;
+    margin-top: 1rem;
+  }
+
+  .hero-primary-btn,
+  .hero-secondary-btn,
+  .contact-action-btn {
+    min-height: 48px;
+    padding: 0.78rem 1rem;
+    font-size: 0.8rem;
+  }
+
+  .services-section {
+    padding-top: 0.4rem;
+    padding-bottom: 1.8rem;
+  }
+
+  .services-head,
+  .price-head,
+  .team-copy,
+  .reviews-copy {
+    margin-bottom: 1.5rem;
+  }
+
+  .services-head {
+    margin-bottom: 2rem;
+  }
+
+  .services-head h2,
+  .price-head h2,
+  .team-copy h2,
+  .reviews-copy h2,
+  .contact-copy h2 {
+    font-size: clamp(2rem, 9vw, 2.7rem);
+  }
+
+  .services-head p,
+  .price-intro,
+  .team-intro,
+  .reviews-intro,
+  .contact-intro {
+    font-size: 0.88rem;
+    line-height: 1.55;
+  }
+
+  .service-card,
+  .price-card,
+  .contact-copy,
+  .hours-panel,
+  .reviews-summary-card {
+    border-radius: 20px;
+  }
+
+  .service-card {
+    min-height: 0;
+    padding: 1.2rem 0.95rem;
+    gap: 0.8rem;
+  }
+
+  .service-card h3 {
+    font-size: clamp(1.65rem, 7.8vw, 2.2rem);
+  }
+
+  .about-ornament {
+    display: none;
+  }
+
+  .service-card-copy p,
+  .service-footer a,
+  .service-eyebrow {
+    font-size: 0.82rem;
+  }
+
+  .gallery-grid {
+    display: flex;
+    gap: 0.8rem;
+    overflow-x: auto;
+    padding-bottom: 0.15rem;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+  }
+
+  .gallery-grid::-webkit-scrollbar {
+    display: none;
+  }
+
+  .gallery-card {
+    flex: 0 0 min(82vw, 19rem);
+    scroll-snap-align: start;
+  }
+
+  .gallery-card.is-featured {
+    grid-row: auto;
+  }
+
+  .gallery-card.is-featured .gallery-card-media,
+  .gallery-card .gallery-card-media {
+    aspect-ratio: 4 / 4.8;
+  }
+
+  .gallery-card-copy {
+    padding: 0.75rem 0.8rem 0.85rem;
+  }
+
+  .gallery-card-copy h3 {
+    font-size: 1.22rem;
+  }
+
+  .gallery-cta {
+    gap: 0.75rem;
+    margin-top: 1.2rem;
+  }
+
+  .gallery-cta p {
+    font-size: 0.85rem;
+  }
+
+  .gallery-mobile-hint {
+    display: block;
+    margin: 0.55rem auto 0;
+    color: #bca67c;
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .gallery-cta-btn {
+    min-height: 44px;
+    padding: 0.68rem 0.95rem;
+    font-size: 0.72rem;
+  }
+
+  .price-section {
+    padding-top: 1rem;
+    padding-bottom: 2.3rem;
+  }
+
+  .price-shell {
+    gap: 1rem;
+  }
+
+  .price-mobile-note {
+    margin-top: 0.6rem;
+    padding: 0.42rem 0.72rem;
+    font-size: 0.68rem;
+    letter-spacing: 0.1em;
+  }
+
+  .price-tabs {
+    gap: 0.5rem;
+    padding-bottom: 0.05rem;
+  }
+
+  .price-tab {
+    min-width: 164px;
+    padding: 0.58rem 0.78rem;
+    font-size: 0.72rem;
+    line-height: 1.15;
+  }
+
+  .price-category-head h3 {
+    font-size: clamp(1.75rem, 8vw, 2.35rem);
+  }
+
+  .price-category-head p,
+  .price-card-head p,
+  .price-duration,
+  .price-value,
+  .price-label {
+    font-size: 0.86rem;
+  }
+
+  .price-card-head,
+  .price-rows,
+  .contact-status,
+  .hours-row {
+    padding-left: 0.85rem;
+    padding-right: 0.85rem;
+  }
+
+  .price-row {
+    padding: 0.6rem 0;
+  }
+
+  .reviews-section,
+  .contact-section {
+    padding-top: 2.8rem;
+    padding-bottom: 3.6rem;
+  }
+
+  .contact-copy,
+  .hours-panel {
+    padding: 1rem;
+  }
+
+  .contact-shell {
+    gap: 1.35rem;
+  }
+
+  .contact-copy h2 {
+    margin-top: 0.35rem;
+    margin-bottom: 1rem;
+  }
+
+  .contact-intro {
+    margin-top: 0;
+    margin-bottom: 1.35rem;
+  }
+
+  .contact-status {
+    gap: 0.8rem;
+    margin-top: 0;
+    margin-bottom: 1.25rem;
+    padding-top: 0.85rem;
+    padding-bottom: 0.85rem;
+  }
+
+  .contact-status strong {
+    font-size: 0.95rem;
+  }
+
+  .contact-status p {
+    font-size: 0.82rem;
+  }
+
+  .contact-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.6rem;
+    margin-top: 0;
+    margin-bottom: 1.25rem;
+  }
+
+  .contact-action-btn {
+    width: 100%;
+  }
+
+  .reviews-copy {
+    padding-top: 0.7rem;
+  }
+
+  .reviews-copy h2 {
+    line-height: 1.02;
+  }
+
+  .contact-info-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.85rem;
+  }
+
+  .contact-card {
+    padding: 0.95rem 0.82rem;
+  }
+
+  .contact-card-label {
+    margin-bottom: 0.38rem;
+    font-size: 0.66rem;
+  }
+
+  .contact-card a,
+  .contact-card p {
+    font-size: 0.88rem;
+    line-height: 1.42;
+  }
+
+  .hours-head h3 {
+    font-size: clamp(1.45rem, 6.2vw, 2rem);
+  }
+
+  .hours-head {
+    margin-bottom: 1.15rem;
+  }
+
+  .hours-list {
+    gap: 0.7rem;
+    margin-top: 0;
+  }
+
+  .hours-row {
+    gap: 0.7rem;
+    padding-top: 0.78rem;
+    padding-bottom: 0.78rem;
+  }
+
+  .hours-day span {
+    font-size: 0.62rem;
+  }
+
+  .hours-day strong,
+  .hours-time {
+    font-size: 0.88rem;
+  }
+
+  .site-footer {
+    padding: 0.7rem 1rem 1.25rem;
+  }
+
+  .site-footer-box {
+    padding: 0;
+  }
+
+  .site-footer-box p {
+    font-size: 0.78rem;
+    letter-spacing: 0.03em;
+  }
+
+  .top-line {
+    margin-top: 0.65rem;
+  }
+
+  .nav-wrap {
+    padding: 0.8rem 0.9rem;
+  }
+
+  .nav-toggle {
+    width: 48px;
+    height: 48px;
+    border-radius: 13px;
+  }
+
+  .nav-menu {
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: 0.65rem;
+    padding: calc(var(--nav-height) + 1.2rem) 0.9rem 6.4rem;
+  }
+
+  .nav-menu a {
+    width: min(100%, 22rem);
+    padding: 0.82rem 0.95rem;
+    font-size: 0.92rem;
+  }
+}
+
+@supports (content-visibility: auto) {
+  .about-section,
+  .services-section,
+  .price-section,
+  .team-section,
+  .reviews-section,
+  .contact-section {
+    content-visibility: auto;
+    contain-intrinsic-size: 900px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bg-video {
+    display: none;
+  }
+
+  .loader-wrap *,
+  .page-content,
+  .nav-menu,
+  .hero-primary-btn,
+  .hero-secondary-btn,
+  .contact-action-btn {
+    animation: none !important;
+    transition: none !important;
+  }
+}
 </style>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
