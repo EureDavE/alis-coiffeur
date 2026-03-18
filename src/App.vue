@@ -758,7 +758,7 @@ watch(mobileMenuOpen, (isOpen) => {
 
       <footer class="site-footer">
         <div class="site-footer-box">
-          <p>© Alis Coiffeur Obfelden 2025</p>
+          <p>Website by David Kutlesa</p>
         </div>
       </footer>
     </section>
@@ -1395,8 +1395,18 @@ watch(mobileMenuOpen, (isOpen) => {
     letter-spacing: 0.03em;
   }
 
+  .top-mark {
+    align-items: flex-end;
+    gap: 0.28rem;
+  }
+
   .top-line {
-    margin-top: 0.65rem;
+    width: 2.2rem;
+    margin-top: 1.32rem;
+  }
+
+  .swirl {
+    height: 1.65rem;
   }
 
   .nav-wrap {

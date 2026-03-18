@@ -104,7 +104,7 @@ const selectPriceCategory = (index) => {
 
     <footer class="site-footer">
       <div class="site-footer-box">
-        <p>© Alis Coiffeur Obfelden 2025</p>
+        <p>Website by David Kutlesa</p>
       </div>
     </footer>
 
