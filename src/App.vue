@@ -746,12 +746,7 @@ watch(mobileMenuOpen, (isOpen) => {
                       class="gallery-before-after-divider"
                       :class="{ 'is-hidden': beforeAfterProgress[item.key] <= 0.02 || beforeAfterProgress[item.key] >= 0.98 }"
                       :style="{ left: `${beforeAfterProgress[item.key] * 100}%` }"
-                    >
-                      <span class="gallery-before-after-handle">
-                        <span></span>
-                        <span></span>
-                      </span>
-                    </div>
+                    ></div>
                   </div>
                 </template>
                 <img
@@ -1069,9 +1064,9 @@ watch(mobileMenuOpen, (isOpen) => {
   top: 0;
   bottom: 0;
   z-index: 2;
-  width: 2px;
-  background: rgba(255, 244, 214, 0.96);
-  box-shadow: 0 0 0 1px rgba(215, 183, 103, 0.2), 0 0 28px rgba(255, 244, 214, 0.28);
+  width: 1px;
+  background: rgba(255, 244, 214, 0.55);
+  box-shadow: 0 0 0 1px rgba(215, 183, 103, 0.08);
   transform: translateX(-50%);
   pointer-events: none;
   will-change: left;
@@ -1084,38 +1079,6 @@ watch(mobileMenuOpen, (isOpen) => {
 
 .gallery-before-after-slider:active .gallery-before-after-divider {
   transition: none;
-}
-
-.gallery-before-after-handle {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.2rem;
-  width: 3rem;
-  height: 3rem;
-  border: 1px solid rgba(215, 183, 103, 0.34);
-  border-radius: 999px;
-  background: rgba(10, 10, 10, 0.8);
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.28);
-  transform: translate(-50%, -50%);
-}
-
-.gallery-before-after-handle span {
-  width: 0.45rem;
-  height: 0.45rem;
-  border-top: 2px solid #fff4d6;
-  border-right: 2px solid #fff4d6;
-}
-
-.gallery-before-after-handle span:first-child {
-  transform: rotate(-135deg);
-}
-
-.gallery-before-after-handle span:last-child {
-  transform: rotate(45deg);
 }
 
 .gallery-image {
@@ -1216,9 +1179,234 @@ watch(mobileMenuOpen, (isOpen) => {
   height: 12.5rem;
 }
 
+@media (width>900px) {
+  .site-root {
+    --nav-height: 86px;
+  }
+
+  .nav-wrap {
+    gap: 1.4rem;
+    min-height: 86px;
+    padding: 0.6rem 2rem;
+  }
+
+  .brand-logo {
+    font-size: clamp(2rem, 3.8vw, 3.35rem);
+  }
+
+  .brand-subline {
+    font-size: 0.92rem;
+  }
+
+  .nav-menu {
+    gap: clamp(0.8rem, 1vw, 1.2rem);
+  }
+
+  .nav-menu a {
+    font-size: clamp(0.84rem, 0.9vw, 1rem);
+  }
+
+  .cta-btn {
+    min-height: 52px;
+    padding: 0.6rem 1.15rem;
+    font-size: 0.92rem;
+  }
+
+  .hero-content {
+    max-width: 760px;
+    bottom: 3.8rem;
+    left: 3rem;
+  }
+
+  .hero-rating-chip {
+    margin-bottom: 1rem;
+    padding: 0.6rem 0.9rem;
+  }
+
+  .hero-rating-score {
+    font-size: 1.3rem;
+  }
+
+  .hero-rating-total {
+    font-size: 0.9rem;
+  }
+
+  .hero-title {
+    font-size: clamp(2.25rem, 4vw, 4.15rem);
+    line-height: 1.02;
+  }
+
+  .hero-line {
+    width: 180px;
+    margin-top: 0.95rem;
+  }
+
+  .hero-subtitle {
+    margin-top: 0.8rem;
+    font-size: clamp(1.85rem, 2.8vw, 3rem);
+  }
+
+  .hero-description {
+    max-width: 34rem;
+    margin-top: 0.9rem;
+    font-size: clamp(0.96rem, 1.1vw, 1.06rem);
+    line-height: 1.6;
+  }
+
+  .hero-actions {
+    gap: 0.8rem;
+    margin-top: 1.35rem;
+  }
+
+  .hero-primary-btn,
+  .hero-secondary-btn {
+    min-height: 50px;
+    padding: 0.8rem 1.2rem;
+    font-size: 0.82rem;
+  }
+
+  .hero-facts {
+    gap: 0.8rem;
+    width: min(100%, 34rem);
+    margin-top: 1.35rem;
+  }
+
+  .hero-fact {
+    padding: 0.85rem 0.95rem;
+  }
+
+  .hero-fact span {
+    font-size: 0.7rem;
+  }
+
+  .hero-fact strong {
+    font-size: 0.94rem;
+  }
+
+  .gallery-shell {
+    width: min(100%, 1040px);
+  }
+
+  .gallery-grid {
+    gap: 0.9rem;
+  }
+
+  .gallery-card-media {
+    aspect-ratio: 4 / 4.35;
+  }
+
+  .gallery-card-copy {
+    gap: 0.55rem;
+    padding: 0.85rem 0.9rem 0.95rem;
+  }
+
+  .gallery-card-copy h3 {
+    font-size: clamp(1.35rem, 1.9vw, 1.75rem);
+  }
+
+  .gallery-card-copy p {
+    font-size: 0.92rem;
+  }
+}
+
 @media (width<=900px) {
+  .nav-wrap {
+    gap: 1rem;
+    padding: 0.85rem 1.15rem;
+  }
+
+  .brand-logo {
+    font-size: clamp(1.8rem, 5.6vw, 2.6rem);
+  }
+
+  .brand-subline {
+    font-size: 0.82rem;
+  }
+
+  .nav-menu {
+    gap: 0.7rem 0.9rem;
+  }
+
+  .nav-menu a {
+    font-size: 0.86rem;
+  }
+
+  .cta-btn {
+    min-height: 48px;
+    padding: 0.55rem 0.95rem;
+    font-size: 0.82rem;
+  }
+
+  .hero-content {
+    max-width: 34rem;
+    bottom: 2.4rem;
+    left: 1.6rem;
+    right: 1.6rem;
+  }
+
+  .hero-title {
+    font-size: clamp(2.1rem, 6.1vw, 3.35rem);
+    line-height: 1;
+  }
+
+  .hero-line {
+    width: 140px;
+    margin-top: 0.8rem;
+  }
+
+  .hero-subtitle {
+    margin-top: 0.75rem;
+    font-size: clamp(1.45rem, 4vw, 2.3rem);
+  }
+
+  .hero-description {
+    max-width: 28rem;
+    font-size: 0.94rem;
+    line-height: 1.55;
+  }
+
+  .hero-actions {
+    gap: 0.7rem;
+    margin-top: 1.15rem;
+  }
+
+  .hero-primary-btn,
+  .hero-secondary-btn {
+    min-height: 48px;
+    padding: 0.75rem 1.05rem;
+    font-size: 0.8rem;
+  }
+
+  .hero-facts {
+    gap: 0.7rem;
+    width: min(100%, 28rem);
+    margin-top: 1.1rem;
+  }
+
+  .hero-fact {
+    padding: 0.8rem 0.85rem;
+  }
+
   .gallery-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+  }
+
+  .gallery-card-media {
+    aspect-ratio: 4 / 4.6;
+  }
+
+  .gallery-card-copy {
+    padding: 0.78rem 0.8rem 0.9rem;
+  }
+
+  .gallery-card-copy h3 {
+    font-size: 1.28rem;
+  }
+
+  .gallery-card-copy p {
+    font-size: 0.88rem;
+    line-height: 1.45;
   }
 }
 
@@ -1262,19 +1450,19 @@ watch(mobileMenuOpen, (isOpen) => {
   }
 
   .hero-content {
-    width: min(100% - 2rem, 22rem);
-    inset: auto 1rem 2rem;
+    width: min(100% - 2rem, 20.5rem);
+    inset: auto 1rem 3.8rem;
     text-align: left;
     align-items: flex-start;
     display: flex;
     flex-direction: column;
-    gap: 0.35rem;
+    gap: 0.28rem;
   }
 
   .hero-title {
-    max-width: 8.5ch;
-    font-size: clamp(1.9rem, 8.2vw, 2.6rem);
-    line-height: 0.96;
+    max-width: 8.8ch;
+    font-size: clamp(1.8rem, 7.8vw, 2.4rem);
+    line-height: 0.98;
   }
 
   .hero-title span {
@@ -1287,15 +1475,20 @@ watch(mobileMenuOpen, (isOpen) => {
   }
 
   .hero-description {
-    max-width: 21rem;
-    font-size: 0.9rem;
-    line-height: 1.5;
+    max-width: 19.5rem;
+    font-size: 0.86rem;
+    line-height: 1.45;
+  }
+
+  .hero-subtitle {
+    margin-top: 0.7rem;
+    font-size: clamp(1.35rem, 6vw, 1.85rem);
   }
 
   .hero-actions {
     width: 100%;
-    gap: 0.6rem;
-    margin-top: 1rem;
+    gap: 0.55rem;
+    margin-top: 0.9rem;
   }
 
   .hero-primary-btn,
@@ -1548,21 +1741,21 @@ watch(mobileMenuOpen, (isOpen) => {
   }
 
   .nav-menu {
-    gap: 1.1rem;
-    padding: calc(var(--nav-height) + 1.8rem) 1.2rem 6.4rem;
+    gap: 0.85rem;
+    padding: calc(var(--nav-height) + 1.3rem) 1rem 6rem;
   }
 
   .nav-menu a {
-    width: min(100%, 24rem);
-    padding: 0.55rem 0.75rem;
+    width: min(100%, 22rem);
+    padding: 0.45rem 0.7rem;
     border: 0;
     background: transparent;
     color: rgba(245, 241, 230, 0.92);
-    letter-spacing: 0.06em;
+    letter-spacing: 0.05em;
     font-family: Oswald, sans-serif;
-    font-size: 1.45rem;
+    font-size: 1.22rem;
     font-weight: 500;
-    line-height: 1.05;
+    line-height: 1.08;
     text-align: center;
     text-transform: uppercase;
     position: relative;

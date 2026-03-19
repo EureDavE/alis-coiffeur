@@ -433,6 +433,57 @@ const markHomeNavigation = () => {
 }
 
 @media (width <= 900px) {
+  .nav-wrap {
+    gap: 1rem;
+    padding: 0.85rem 1.15rem;
+  }
+
+  .brand-logo {
+    font-size: clamp(1.8rem, 5.6vw, 2.6rem);
+  }
+
+  .brand-subline {
+    font-size: 0.82rem;
+  }
+
+  .nav-menu {
+    gap: 0.7rem 0.9rem;
+  }
+
+  .nav-menu a {
+    font-size: 0.86rem;
+  }
+
+  .cta-btn {
+    min-height: 48px;
+    padding: 0.55rem 0.95rem;
+    font-size: 0.82rem;
+  }
+
+  .prices-hero {
+    padding: calc(var(--nav-height) + 2rem) 1.15rem 1.1rem;
+  }
+
+  .prices-intro {
+    max-width: 32rem;
+    font-size: 0.92rem;
+    line-height: 1.6;
+  }
+
+  .price-shell {
+    gap: 1rem;
+  }
+
+  .price-tabs {
+    gap: 0.65rem;
+    max-width: 100%;
+  }
+
+  .price-tab {
+    padding: 0.82rem 0.9rem;
+    font-size: 0.86rem;
+  }
+
   .price-groups {
     grid-template-columns: 1fr;
   }
@@ -482,21 +533,21 @@ const markHomeNavigation = () => {
   }
 
   .nav-menu {
-    gap: 1.1rem;
-    padding: calc(var(--nav-height) + 1.8rem) 1.2rem 6.4rem;
+    gap: 0.85rem;
+    padding: calc(var(--nav-height) + 1.3rem) 1rem 6rem;
   }
 
   .nav-menu a {
-    width: min(100%, 24rem);
-    padding: 0.55rem 0.75rem;
+    width: min(100%, 22rem);
+    padding: 0.45rem 0.7rem;
     border: 0;
     background: transparent;
     color: rgba(245, 241, 230, 0.92);
-    letter-spacing: 0.06em;
+    letter-spacing: 0.05em;
     font-family: Oswald, sans-serif;
-    font-size: 1.45rem;
+    font-size: 1.22rem;
     font-weight: 500;
-    line-height: 1.05;
+    line-height: 1.08;
     text-align: center;
     text-transform: uppercase;
     position: relative;
@@ -512,9 +563,9 @@ const markHomeNavigation = () => {
   }
 
   .prices-intro {
-    max-width: 23rem;
-    font-size: 0.84rem;
-    line-height: 1.55;
+    max-width: 21rem;
+    font-size: 0.82rem;
+    line-height: 1.5;
   }
 
   .price-section {
@@ -524,7 +575,7 @@ const markHomeNavigation = () => {
   .price-tabs {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.55rem;
+    gap: 0.45rem;
     width: 100%;
     max-width: none;
     overflow: visible;
@@ -540,8 +591,9 @@ const markHomeNavigation = () => {
 
   .price-tab {
     min-width: 0;
-    padding: 0.72rem 0.82rem;
-    font-size: 0.74rem;
+    padding: 0.64rem 0.65rem;
+    font-size: 0.7rem;
+    line-height: 1.22;
   }
 
   .price-tabs-hint {
@@ -549,11 +601,11 @@ const markHomeNavigation = () => {
   }
 
   .price-category-head h2 {
-    font-size: clamp(1.75rem, 8.4vw, 2.25rem);
+    font-size: clamp(1.65rem, 8vw, 2.1rem);
   }
 
   .price-category-head p {
-    font-size: 0.8rem;
+    font-size: 0.76rem;
   }
 
   .price-card {
