@@ -9,6 +9,9 @@ export default defineConfig({
   build: {
     outDir: 'docs',
     emptyOutDir: true,
+    sourcemap: false,
+    cssMinify: true,
+    reportCompressedSize: false,
     rollupOptions: {
       input: {
         main: fileURLToPath(new URL('./index.html', import.meta.url)),

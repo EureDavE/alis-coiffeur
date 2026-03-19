@@ -892,7 +892,7 @@ watch(mobileMenuOpen, (isOpen) => {
 
       <footer class="site-footer">
         <div class="site-footer-box">
-          <p>Website by David Kutlesa</p>
+          <p>Developed by David Kutlesa</p>
         </div>
       </footer>
     </section>
@@ -1163,20 +1163,26 @@ watch(mobileMenuOpen, (isOpen) => {
 }
 
 .service-price-link {
-  color: #d7b767;
+  color: #d7b767 !important;
+  display: inline-block;
   font-size: 0.96rem;
   font-weight: 500;
   letter-spacing: 0.06em;
-  text-decoration: underline;
-  text-decoration-color: rgba(215, 183, 103, 0.82);
-  text-decoration-thickness: 1px;
+  text-decoration-line: underline !important;
+  text-decoration-color: rgba(215, 183, 103, 0.98) !important;
+  text-decoration-thickness: 1px !important;
   text-underline-offset: 0.24rem;
-  transition: color 0.2s ease, text-decoration-color 0.2s ease, opacity 0.2s ease;
+  transition: opacity 0.2s ease;
 }
 
+.service-price-link:link,
+.service-price-link:visited,
+.service-price-link:hover,
+.service-price-link:active,
 .service-price-link:hover {
-  color: #f0d694;
-  text-decoration-color: rgba(240, 214, 148, 0.98);
+  color: #d7b767 !important;
+  text-decoration-line: underline !important;
+  text-decoration-color: rgba(215, 183, 103, 0.98) !important;
 }
 
 .about-ornament-top {
@@ -1568,9 +1574,15 @@ watch(mobileMenuOpen, (isOpen) => {
   }
 
   .service-card-copy p,
-  .service-footer a,
   .service-eyebrow {
     font-size: 0.82rem;
+  }
+
+  .service-price-link {
+    color: #d7b767 !important;
+    font-size: 0.82rem;
+    text-decoration-line: underline !important;
+    text-decoration-color: rgba(215, 183, 103, 0.98) !important;
   }
 
   .gallery-grid {
@@ -1702,10 +1714,35 @@ watch(mobileMenuOpen, (isOpen) => {
     padding-inline: 0.5rem;
   }
 
-  .top-mark,
   .flourish-top,
   .flourish-bottom {
     display: none;
+  }
+
+  .top-mark {
+    display: grid;
+    align-items: start;
+    gap: 0.14rem;
+    margin-bottom: 0.38rem;
+  }
+
+  .top-line {
+    width: 3.15rem;
+    height: 2px;
+    transform: translateY(-0.18rem);
+  }
+
+  .swirl {
+    height: 1.4rem;
+    margin-top: 0.08rem;
+  }
+
+  .swirl:before {
+    height: 1rem;
+  }
+
+  .swirl:after {
+    height: 0.72rem;
   }
 
   .logo-core {
