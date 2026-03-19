@@ -673,7 +673,7 @@ watch(mobileMenuOpen, (isOpen) => {
                 </div>
 
                 <div class="service-footer">
-                  <a href="./preise.html">Zur Preisliste</a>
+                  <a class="service-price-link" href="./preise.html">Zur Preisliste</a>
                 </div>
               </article>
             </div>
@@ -1162,6 +1162,23 @@ watch(mobileMenuOpen, (isOpen) => {
   background: linear-gradient(135deg, rgba(215, 183, 103, 0.28), rgba(184, 134, 54, 0.42));
 }
 
+.service-price-link {
+  color: #d7b767;
+  font-size: 0.96rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-decoration: underline;
+  text-decoration-color: rgba(215, 183, 103, 0.82);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.24rem;
+  transition: color 0.2s ease, text-decoration-color 0.2s ease, opacity 0.2s ease;
+}
+
+.service-price-link:hover {
+  color: #f0d694;
+  text-decoration-color: rgba(240, 214, 148, 0.98);
+}
+
 .about-ornament-top {
   top: 7rem;
   right: 7rem;
@@ -1214,7 +1231,7 @@ watch(mobileMenuOpen, (isOpen) => {
 
   .hero-content {
     max-width: 760px;
-    bottom: 3.8rem;
+    bottom: 4.7rem;
     left: 3rem;
   }
 
@@ -1451,7 +1468,7 @@ watch(mobileMenuOpen, (isOpen) => {
 
   .hero-content {
     width: min(100% - 2rem, 20.5rem);
-    inset: auto 1rem 3.8rem;
+    inset: auto 1rem 2.2rem;
     text-align: left;
     align-items: flex-start;
     display: flex;
