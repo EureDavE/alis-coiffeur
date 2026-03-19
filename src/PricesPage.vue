@@ -2,31 +2,73 @@
 import { computed, ref } from 'vue'
 import { priceCategories } from './data/priceCategories'
 
+const SKIP_LOADER_KEY = 'alis-skip-loader-once'
 const selectedPriceCategory = ref(0)
+const mobileMenuOpen = ref(false)
 const currentPriceCategory = computed(() => priceCategories[selectedPriceCategory.value] ?? priceCategories[0])
-const remainingPriceCategories = computed(() => Math.max(priceCategories.length - 1, 0))
+const navItems = [
+  { id: 'start', label: 'Start', href: './index.html' },
+  { id: 'ueber-uns', label: 'Über Uns', href: './index.html#ueber-uns' },
+  { id: 'leistungen', label: 'Leistungen', href: './index.html#leistungen' },
+  { id: 'preisliste', label: 'Preisliste', href: './preise.html' },
+  { id: 'team', label: 'Galerie', href: './index.html#team' },
+  { id: 'kontakt', label: 'Kontakt', href: './index.html#kontakt' },
+]
 
 const selectPriceCategory = (index) => {
   selectedPriceCategory.value = index
+}
+
+const closeMobileMenu = () => {
+  mobileMenuOpen.value = false
+}
+
+const toggleMobileMenu = () => {
+  mobileMenuOpen.value = !mobileMenuOpen.value
+}
+
+const markHomeNavigation = () => {
+  window.sessionStorage.setItem(SKIP_LOADER_KEY, 'true')
 }
 </script>
 
 <template>
   <main class="prices-page">
-    <header class="prices-nav">
-      <a class="prices-brand" href="./index.html">
-        <strong>ALIS</strong>
-        <span>Coiffeur mit Stil</span>
+    <header class="nav-wrap" :class="{ 'is-mobile-open': mobileMenuOpen }">
+      <a class="brand" href="./index.html" @click="closeMobileMenu(); markHomeNavigation()">
+        <span class="brand-logo">ALIS</span>
+        <span class="brand-subline">Coiffeur mit Stil</span>
       </a>
 
-      <nav class="prices-links" aria-label="Seitennavigation">
-        <a href="./index.html">Start</a>
-        <a href="./index.html#leistungen">Leistungen</a>
-        <a href="./index.html#team">Galerie</a>
-        <a href="./index.html#kontakt">Kontakt</a>
+      <button
+        type="button"
+        class="nav-toggle"
+        :class="{ 'is-active': mobileMenuOpen }"
+        aria-controls="mobile-navigation"
+        :aria-expanded="mobileMenuOpen ? 'true' : 'false'"
+        aria-label="Navigation umschalten"
+        @click="toggleMobileMenu"
+      >
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+
+      <nav id="mobile-navigation" class="nav-menu" aria-label="Hauptnavigation" :class="{ 'is-open': mobileMenuOpen }">
+        <a
+          v-for="item in navItems"
+          :key="item.id"
+          :href="item.href"
+          :class="{ 'is-active': item.id === 'preisliste' }"
+          @click="closeMobileMenu(); item.id !== 'preisliste' ? markHomeNavigation() : null"
+        >
+          {{ item.label }}
+        </a>
       </nav>
 
-      <a class="prices-nav-cta" href="tel:+41447616222">Jetzt anrufen</a>
+      <div class="nav-right">
+        <a class="cta-btn" href="tel:+41447616222">Jetzt anrufen</a>
+      </div>
     </header>
 
     <section class="prices-hero">
@@ -54,11 +96,6 @@ const selectPriceCategory = (index) => {
         </div>
 
         <p class="price-tabs-hint">Wische auf Mobile durch die Kategorien oder tippe direkt auf einen Bereich.</p>
-
-        <p v-if="remainingPriceCategories > 0" class="price-mobile-note">
-          +{{ remainingPriceCategories }} weitere Kategorien
-        </p>
-
         <section class="price-category">
           <div class="price-category-head">
             <h2>{{ currentPriceCategory.title }}</h2>
@@ -109,7 +146,7 @@ const selectPriceCategory = (index) => {
     </footer>
 
     <div class="mobile-action-bar">
-      <a class="mobile-action-btn is-secondary" href="./index.html">Startseite</a>
+      <a class="mobile-action-btn is-secondary" href="./index.html" @click="markHomeNavigation()">Startseite</a>
       <a class="mobile-action-btn is-primary" href="tel:+41447616222">Jetzt anrufen</a>
     </div>
   </main>
@@ -127,6 +164,7 @@ const selectPriceCategory = (index) => {
 }
 
 .prices-page {
+  --nav-height: 94px;
   min-height: 100vh;
   color: #ead08b;
   background:
@@ -135,70 +173,14 @@ const selectPriceCategory = (index) => {
     linear-gradient(180deg, #261c10, #171108 38%, #171108 100%);
 }
 
-.prices-nav {
-  position: sticky;
-  top: 0;
-  z-index: 20;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1.2rem;
-  padding: 1rem 1.4rem;
-  border-bottom: 1px solid rgba(215, 183, 103, 0.16);
-  background: rgba(10, 10, 10, 0.9);
-  backdrop-filter: blur(10px);
-}
-
-.prices-brand {
-  display: grid;
-  text-decoration: none;
-  color: #fff4d6;
-}
-
-.prices-brand strong {
-  font-family: Oswald, sans-serif;
-  font-size: clamp(1.8rem, 3vw, 2.4rem);
-  line-height: 0.95;
-  letter-spacing: 0.08em;
-}
-
-.prices-brand span {
-  color: #d8c39a;
-  font-family: "Cormorant Garamond", serif;
-  font-size: 0.95rem;
-}
-
-.prices-links {
-  display: flex;
-  align-items: center;
-  gap: 1.2rem;
-}
-
-.prices-links a,
-.prices-nav-cta {
-  color: #f0e2bf;
-  text-decoration: none;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-size: 0.82rem;
-  font-weight: 700;
-}
-
-.prices-nav-cta {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 48px;
-  padding: 0.8rem 1.1rem;
-  border-radius: 999px;
-  background: linear-gradient(135deg, #d7b767, #b88636);
-  color: #130f09;
+.nav-menu .is-active {
+  color: #d7b767;
 }
 
 .prices-hero {
   width: min(100%, 980px);
   margin: 0 auto;
-  padding: 5.2rem 1.4rem 2.4rem;
+  padding: calc(var(--nav-height) + 3.1rem) 1.4rem 1.35rem;
   text-align: center;
   background: transparent;
 }
@@ -235,7 +217,7 @@ const selectPriceCategory = (index) => {
 
 .price-shell {
   display: grid;
-  gap: 1.4rem;
+  gap: 0.8rem;
   width: min(100%, 1180px);
   margin: 0 auto;
 }
@@ -247,11 +229,11 @@ const selectPriceCategory = (index) => {
   max-width: 760px;
   width: 100%;
   margin: 0 auto;
-  padding: 0.35rem;
-  border: 1px solid rgba(215, 183, 103, 0.12);
-  border-radius: 30px;
-  background: rgba(12, 10, 7, 0.36);
-  box-shadow: inset 0 0 0 1px rgba(215, 183, 103, 0.04);
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .price-tab {
@@ -451,14 +433,6 @@ const selectPriceCategory = (index) => {
 }
 
 @media (width <= 900px) {
-  .prices-nav {
-    padding-inline: 1rem;
-  }
-
-  .prices-links {
-    display: none;
-  }
-
   .price-groups {
     grid-template-columns: 1fr;
   }
@@ -470,27 +444,71 @@ const selectPriceCategory = (index) => {
 }
 
 @media (width <= 640px) {
-  .prices-nav {
-    gap: 0.8rem;
-    padding: 0.85rem;
+  .nav-wrap {
+    padding: 0.8rem 0.9rem;
   }
 
-  .prices-brand strong {
-    font-size: 1.55rem;
+  .nav-toggle {
+    width: 48px;
+    height: 48px;
+    border-radius: 13px;
   }
 
-  .prices-brand span {
-    font-size: 0.78rem;
+  .nav-toggle span {
+    left: 50%;
+    transform: translate(-50%, -50%);
   }
 
-  .prices-nav-cta {
-    min-height: 42px;
-    padding: 0.68rem 0.9rem;
-    font-size: 0.72rem;
+  .nav-toggle span:first-child {
+    top: calc(50% - 8px);
+  }
+
+  .nav-toggle span:nth-child(2) {
+    top: 50%;
+  }
+
+  .nav-toggle span:nth-child(3) {
+    top: calc(50% + 8px);
+  }
+
+  .nav-toggle.is-active span:first-child {
+    top: 50%;
+    transform: translate(-50%, -50%) rotate(45deg);
+  }
+
+  .nav-toggle.is-active span:nth-child(3) {
+    top: 50%;
+    transform: translate(-50%, -50%) rotate(-45deg);
+  }
+
+  .nav-menu {
+    gap: 1.1rem;
+    padding: calc(var(--nav-height) + 1.8rem) 1.2rem 6.4rem;
+  }
+
+  .nav-menu a {
+    width: min(100%, 24rem);
+    padding: 0.55rem 0.75rem;
+    border: 0;
+    background: transparent;
+    color: rgba(245, 241, 230, 0.92);
+    letter-spacing: 0.06em;
+    font-family: Oswald, sans-serif;
+    font-size: 1.45rem;
+    font-weight: 500;
+    line-height: 1.05;
+    text-align: center;
+    text-transform: uppercase;
+    position: relative;
+  }
+
+  .nav-menu a.is-active {
+    color: #e3bf67;
+    text-shadow: 0 0 18px rgba(215, 183, 103, 0.18);
   }
 
   .prices-hero {
-    padding: 2.6rem 1rem 1.4rem;
+    padding: calc(var(--nav-height) + 1.35rem) 1rem 0.95rem;
   }
 
   .prices-intro {
@@ -504,50 +522,30 @@ const selectPriceCategory = (index) => {
   }
 
   .price-tabs {
-    display: flex;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.55rem;
-    width: auto;
+    width: 100%;
     max-width: none;
-    overflow-x: auto;
-    scrollbar-width: none;
-    padding: 0.3rem;
-    scroll-snap-type: x proximity;
+    overflow: visible;
+    padding: 0;
     position: sticky;
     top: 4.5rem;
     z-index: 8;
-    margin-inline: -0.15rem;
-    background: linear-gradient(180deg, rgba(23, 17, 8, 0.94), rgba(23, 17, 8, 0.76));
-    backdrop-filter: blur(8px);
-    border-radius: 24px;
-  }
-
-  .price-tabs::-webkit-scrollbar {
-    display: none;
+    margin-inline: 0;
+    background: transparent;
+    backdrop-filter: none;
+    border-radius: 0;
   }
 
   .price-tab {
-    flex: none;
-    min-width: 168px;
-    scroll-snap-align: start;
+    min-width: 0;
     padding: 0.72rem 0.82rem;
     font-size: 0.74rem;
   }
 
-  .price-mobile-note {
-    display: inline-flex;
-    justify-content: center;
-    align-items: center;
-    margin-top: 0.15rem;
-    font-size: 0.68rem;
-  }
-
   .price-tabs-hint {
-    display: block;
-    margin-top: -0.15rem;
-    color: #bfa97b;
-    font-size: 0.74rem;
-    line-height: 1.45;
-    text-align: center;
+    display: none;
   }
 
   .price-category-head h2 {

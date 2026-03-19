@@ -2,9 +2,15 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import landingVideo from './assets/WWVA0186.mp4'
 import heroPoster from './assets/hero.png'
+import vorherImage from './assets/Vorher.jpg'
+import nachherImage from './assets/Nacher.jpg'
+import vorherImageOne from './assets/Vorher1.jpg'
+import nachherImageOne from './assets/Nacher1.jpg'
 
+const SKIP_LOADER_KEY = 'alis-skip-loader-once'
 const loading = ref(true)
 const cutPhase = ref(false)
+const skipIntroTransition = ref(false)
 const servicePage = ref(0)
 const mobileMenuOpen = ref(false)
 const activeSection = ref('start')
@@ -12,6 +18,14 @@ const now = ref(new Date())
 const prefersReducedMotion = ref(false)
 const isMobileViewport = ref(false)
 const heroVideo = ref(null)
+const beforeAfterProgress = ref({
+  kurzhaar: 0,
+  damenCut: 0,
+})
+const beforeAfterDragging = ref({
+  kurzhaar: false,
+  damenCut: false,
+})
 const sectionElements = ref([])
 let servicesTimer = null
 let revealObserver = null
@@ -24,6 +38,8 @@ let mediaQueryHandler = null
 let scrollTicking = false
 let servicesTouchStartX = 0
 let servicesTouchDeltaX = 0
+const beforeAfterAutoTimers = {}
+const beforeAfterPhaseTimers = {}
 
 const navItems = [
   { id: 'start', label: 'Start', href: '#' },
@@ -57,39 +73,41 @@ const googleRating = { score: '4.9', stars: '★★★★★', total: 93 }
 
 const galleryItems = [
   {
-    title: 'Balayage Vorher / Nachher',
-    type: 'Vorher / Nachher',
-    image: '/images/galerie/vorher-nachher-balayage.svg',
-    alt: 'Vorher-Nachher Balayage bei Alis Coiffeur',
-  },
-  {
+    key: 'kurzhaar',
     title: 'Kurzhaarschnitt Vorher / Nachher',
     type: 'Vorher / Nachher',
-    image: '/images/galerie/vorher-nachher-kurzhaar.svg',
+    beforeAfterImages: [
+      { src: vorherImage, alt: 'Kurzhaarschnitt vorher bei Alis Coiffeur', label: 'Vorher' },
+      { src: nachherImage, alt: 'Kurzhaarschnitt nachher bei Alis Coiffeur', label: 'Nachher' },
+    ],
     alt: 'Vorher-Nachher Kurzhaarschnitt bei Alis Coiffeur',
   },
   {
+    key: 'damenCut',
     title: 'Damen Cut & Styling',
-    type: 'Haarschnitt',
-    image: '/images/galerie/haarschnitt-damen.svg',
+    type: 'Vorher / Nachher',
+    beforeAfterImages: [
+      { src: vorherImageOne, alt: 'Damen Cut vorher bei Alis Coiffeur', label: 'Vorher' },
+      { src: nachherImageOne, alt: 'Damen Cut nachher bei Alis Coiffeur', label: 'Nacher' },
+    ],
     alt: 'Damen Cut und Styling bei Alis Coiffeur',
   },
   {
     title: 'Herren Fade',
     type: 'Haarschnitt',
-    image: '/images/galerie/haarschnitt-herren.svg',
+    image: './images/galerie/haarschnitt-herren.svg',
     alt: 'Herren Fade und Styling bei Alis Coiffeur',
   },
   {
     title: 'Langhaar Styling',
     type: 'Haarschnitt',
-    image: '/images/galerie/haarschnitt-langhaar.svg',
+    image: './images/galerie/haarschnitt-langhaar.svg',
     alt: 'Langhaar Styling bei Alis Coiffeur',
   },
   {
     title: 'Farbe & Glanz Finish',
     type: 'Haarschnitt',
-    image: '/images/galerie/haarschnitt-color.svg',
+    image: './images/galerie/haarschnitt-color.svg',
     alt: 'Color Finish bei Alis Coiffeur',
   },
 ]
@@ -205,6 +223,58 @@ const toggleMobileMenu = () => {
   mobileMenuOpen.value = !mobileMenuOpen.value
 }
 
+const stopBeforeAfterAnimation = (key) => {
+  if (beforeAfterAutoTimers[key]) {
+    window.clearTimeout(beforeAfterAutoTimers[key])
+    delete beforeAfterAutoTimers[key]
+  }
+  if (beforeAfterPhaseTimers[key]) {
+    window.clearTimeout(beforeAfterPhaseTimers[key])
+    delete beforeAfterPhaseTimers[key]
+  }
+}
+
+const updateBeforeAfterProgress = (key, sliderElement, clientX) => {
+  if (!sliderElement) return
+  const bounds = sliderElement.getBoundingClientRect()
+  const rawProgress = (clientX - bounds.left) / bounds.width
+  beforeAfterProgress.value[key] = Math.min(1, Math.max(0, rawProgress))
+}
+
+const startBeforeAfterAnimation = (key) => {
+  if (prefersReducedMotion.value || beforeAfterDragging.value[key]) return
+  stopBeforeAfterAnimation(key)
+  beforeAfterProgress.value[key] = 0
+  beforeAfterAutoTimers[key] = window.setTimeout(() => {
+    beforeAfterProgress.value[key] = 1
+    beforeAfterPhaseTimers[key] = window.setTimeout(() => {
+      beforeAfterProgress.value[key] = 0
+      beforeAfterAutoTimers[key] = window.setTimeout(() => {
+        startBeforeAfterAnimation(key)
+      }, 1200)
+    }, 2400)
+  }, 180)
+}
+
+const handleBeforeAfterPointerDown = (key, event) => {
+  beforeAfterDragging.value[key] = true
+  stopBeforeAfterAnimation(key)
+  event.currentTarget?.setPointerCapture?.(event.pointerId)
+  updateBeforeAfterProgress(key, event.currentTarget, event.clientX)
+}
+
+const handleBeforeAfterPointerMove = (key, event) => {
+  if (!beforeAfterDragging.value[key]) return
+  updateBeforeAfterProgress(key, event.currentTarget, event.clientX)
+}
+
+const handleBeforeAfterPointerUp = (key, event) => {
+  if (!beforeAfterDragging.value[key]) return
+  event?.currentTarget?.releasePointerCapture?.(event.pointerId)
+  beforeAfterDragging.value[key] = false
+  startBeforeAfterAnimation(key)
+}
+
 const collectSectionElements = () => {
   sectionElements.value = navItems
     .filter((item) => item.id !== 'start')
@@ -288,12 +358,21 @@ const setupRevealAnimations = async () => {
 }
 
 onMounted(() => {
+  const skipLoader = window.sessionStorage.getItem(SKIP_LOADER_KEY) === 'true'
+  if (skipLoader) {
+    window.sessionStorage.removeItem(SKIP_LOADER_KEY)
+    loading.value = false
+    cutPhase.value = false
+    skipIntroTransition.value = true
+  }
   syncViewportState()
   mediaQueryList = window.matchMedia('(prefers-reduced-motion: reduce)')
   mediaQueryHandler = () => {
     syncMotionPreference()
     syncHeroPlayback()
     startServicesAutoplay()
+    startBeforeAfterAnimation('kurzhaar')
+    startBeforeAfterAnimation('damenCut')
   }
   syncMotionPreference()
   if (mediaQueryList.addEventListener) {
@@ -305,17 +384,31 @@ onMounted(() => {
     window.history.scrollRestoration = 'manual'
   }
   window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
-  window.setTimeout(() => {
-    cutPhase.value = true
+  const finalizeInitialView = () => {
+    loading.value = false
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+    collectSectionElements()
+    setupRevealAnimations()
+    syncHeroPlayback()
+  }
+  if (skipLoader) {
+    window.requestAnimationFrame(() => {
+      finalizeInitialView()
+      window.setTimeout(() => {
+        skipIntroTransition.value = false
+      }, 520)
+    })
+  } else {
     window.setTimeout(() => {
-      loading.value = false
-      window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
-      collectSectionElements()
-      setupRevealAnimations()
-      syncHeroPlayback()
-    }, isMobileViewport.value ? 900 : 800)
-  }, prefersReducedMotion.value ? 900 : isMobileViewport.value ? 1550 : 1800)
+      cutPhase.value = true
+      window.setTimeout(() => {
+        finalizeInitialView()
+      }, isMobileViewport.value ? 900 : 800)
+    }, prefersReducedMotion.value ? 900 : isMobileViewport.value ? 1550 : 1800)
+  }
   startServicesAutoplay()
+  startBeforeAfterAnimation('kurzhaar')
+  startBeforeAfterAnimation('damenCut')
   clockTimer = window.setInterval(() => {
     now.value = new Date()
   }, 60000)
@@ -346,6 +439,8 @@ onMounted(() => {
 onBeforeUnmount(() => {
   if (servicesTimer) window.clearInterval(servicesTimer)
   if (clockTimer) window.clearInterval(clockTimer)
+  stopBeforeAfterAnimation('kurzhaar')
+  stopBeforeAfterAnimation('damenCut')
   if (revealObserver) revealObserver.disconnect()
   if (resizeHandler) window.removeEventListener('resize', resizeHandler)
   if (scrollHandler) window.removeEventListener('scroll', scrollHandler)
@@ -402,7 +497,7 @@ watch(mobileMenuOpen, (isOpen) => {
       </div>
     </section>
 
-    <header v-if="!loading" class="nav-wrap" :class="{ 'is-mobile-open': mobileMenuOpen }">
+    <header v-if="!loading" class="nav-wrap" :class="{ 'is-mobile-open': mobileMenuOpen, 'is-skip-enter': skipIntroTransition }">
       <div class="brand">
         <div class="brand-logo">ALIS</div>
         <div class="brand-subline">Coiffeur mit Stil</div>
@@ -439,7 +534,7 @@ watch(mobileMenuOpen, (isOpen) => {
       </div>
     </header>
 
-    <section class="page-content" :class="{ 'is-visible': !loading }">
+    <section class="page-content" :class="{ 'is-visible': !loading, 'is-skip-enter': skipIntroTransition }">
       <section class="landing-hero">
         <video
           v-if="shouldUseHeroVideo"
@@ -605,18 +700,62 @@ watch(mobileMenuOpen, (isOpen) => {
           <p class="team-intro">
             Eine kuratierte Mini-Galerie mit drei starken Looks wirkt edler und moderner als viele kleine Bilder.
           </p>
-          <p class="gallery-mobile-hint">Auf Mobile kannst du durch die Galerie wischen.</p>
         </div>
 
                 <div class="gallery-shell" data-reveal>
           <div class="gallery-grid">
             <article
-              v-for="(item, index) in galleryItems.slice(0, 3)"
+              v-for="item in galleryItems.slice(0, 2)"
               :key="item.title"
-              :class="['gallery-card', { 'is-featured': index === 0 }]"
+              class="gallery-card"
             >
               <div class="gallery-card-media">
+                <template v-if="item.beforeAfterImages">
+                  <div
+                    class="gallery-before-after-slider"
+                    @pointerdown="handleBeforeAfterPointerDown(item.key, $event)"
+                    @pointermove="handleBeforeAfterPointerMove(item.key, $event)"
+                    @pointerup="handleBeforeAfterPointerUp(item.key, $event)"
+                    @pointercancel="handleBeforeAfterPointerUp(item.key, $event)"
+                    @pointerleave="handleBeforeAfterPointerUp(item.key, $event)"
+                  >
+                    <figure class="gallery-before-after-base">
+                      <img
+                        :src="item.beforeAfterImages[0].src"
+                        :alt="item.beforeAfterImages[0].alt"
+                        class="gallery-image"
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    </figure>
+
+                    <figure
+                      class="gallery-before-after-overlay"
+                      :style="{ clipPath: `inset(0 0 0 ${(1 - beforeAfterProgress[item.key]) * 100}%)` }"
+                    >
+                      <img
+                        :src="item.beforeAfterImages[1].src"
+                        :alt="item.beforeAfterImages[1].alt"
+                        class="gallery-image"
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    </figure>
+
+                    <div
+                      class="gallery-before-after-divider"
+                      :class="{ 'is-hidden': beforeAfterProgress[item.key] <= 0.02 || beforeAfterProgress[item.key] >= 0.98 }"
+                      :style="{ left: `${beforeAfterProgress[item.key] * 100}%` }"
+                    >
+                      <span class="gallery-before-after-handle">
+                        <span></span>
+                        <span></span>
+                      </span>
+                    </div>
+                  </div>
+                </template>
                 <img
+                  v-else
                   :src="item.image"
                   :alt="item.alt"
                   class="gallery-image"
@@ -810,6 +949,14 @@ watch(mobileMenuOpen, (isOpen) => {
   overflow-x: clip;
 }
 
+.nav-wrap.is-skip-enter {
+  animation: nav-skip-in 0.42s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.page-content.is-skip-enter {
+  animation: page-skip-in 0.52s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
 .services-slider {
   touch-action: pan-y;
 }
@@ -871,16 +1018,8 @@ watch(mobileMenuOpen, (isOpen) => {
 
 .gallery-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(0, 0.9fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1.1rem;
-}
-
-.gallery-card.is-featured {
-  grid-row: span 2;
-}
-
-.gallery-card.is-featured .gallery-card-media {
-  aspect-ratio: 4 / 5.8;
 }
 
 .gallery-card {
@@ -898,6 +1037,85 @@ watch(mobileMenuOpen, (isOpen) => {
   aspect-ratio: 4 / 5;
   overflow: hidden;
   background: #121212;
+}
+
+.gallery-before-after-slider {
+  position: relative;
+  height: 100%;
+  cursor: ew-resize;
+  touch-action: pan-y;
+  user-select: none;
+}
+
+.gallery-before-after-base,
+.gallery-before-after-overlay {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+}
+
+.gallery-before-after-overlay {
+  will-change: clip-path;
+  transform: translateZ(0);
+  transition: clip-path 0.72s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.gallery-before-after-slider:active .gallery-before-after-overlay {
+  transition: none;
+}
+
+.gallery-before-after-divider {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 2;
+  width: 2px;
+  background: rgba(255, 244, 214, 0.96);
+  box-shadow: 0 0 0 1px rgba(215, 183, 103, 0.2), 0 0 28px rgba(255, 244, 214, 0.28);
+  transform: translateX(-50%);
+  pointer-events: none;
+  will-change: left;
+  transition: left 0.72s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.gallery-before-after-divider.is-hidden {
+  opacity: 0;
+}
+
+.gallery-before-after-slider:active .gallery-before-after-divider {
+  transition: none;
+}
+
+.gallery-before-after-handle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  width: 3rem;
+  height: 3rem;
+  border: 1px solid rgba(215, 183, 103, 0.34);
+  border-radius: 999px;
+  background: rgba(10, 10, 10, 0.8);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.28);
+  transform: translate(-50%, -50%);
+}
+
+.gallery-before-after-handle span {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-top: 2px solid #fff4d6;
+  border-right: 2px solid #fff4d6;
+}
+
+.gallery-before-after-handle span:first-child {
+  transform: rotate(-135deg);
+}
+
+.gallery-before-after-handle span:last-child {
+  transform: rotate(45deg);
 }
 
 .gallery-image {
@@ -947,10 +1165,6 @@ watch(mobileMenuOpen, (isOpen) => {
   gap: 1rem;
   margin-top: 1.6rem;
   text-align: center;
-}
-
-.gallery-mobile-hint {
-  display: none;
 }
 
 .gallery-cta p {
@@ -1006,15 +1220,6 @@ watch(mobileMenuOpen, (isOpen) => {
   .gallery-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-
-  .gallery-card.is-featured {
-    grid-column: 1 / -1;
-    grid-row: auto;
-  }
-
-  .gallery-card.is-featured .gallery-card-media {
-    aspect-ratio: 16 / 10;
-  }
 }
 
 @media (width<=640px) {
@@ -1046,7 +1251,7 @@ watch(mobileMenuOpen, (isOpen) => {
   .price-section,
   .team-section,
   .reviews-section {
-    min-height: 100svh;
+    min-height: auto;
   }
 
   .about-section {
@@ -1113,16 +1318,12 @@ watch(mobileMenuOpen, (isOpen) => {
     margin-bottom: 1.5rem;
   }
 
-  .services-head {
-    margin-bottom: 2rem;
-  }
-
   .services-head h2,
   .price-head h2,
   .team-copy h2,
   .reviews-copy h2,
   .contact-copy h2 {
-    font-size: clamp(2rem, 9vw, 2.7rem);
+    font-size: clamp(2.2rem, 9.8vw, 3rem);
   }
 
   .services-head p,
@@ -1163,34 +1364,20 @@ watch(mobileMenuOpen, (isOpen) => {
   }
 
   .gallery-grid {
-    display: flex;
-    gap: 0.8rem;
-    overflow-x: auto;
-    padding-bottom: 0.15rem;
-    scroll-snap-type: x mandatory;
-    scrollbar-width: none;
-  }
-
-  .gallery-grid::-webkit-scrollbar {
-    display: none;
-  }
-
-  .gallery-card {
-    flex: 0 0 min(82vw, 19rem);
-    scroll-snap-align: start;
-  }
-
-  .gallery-card.is-featured {
-    grid-row: auto;
-  }
-
-  .gallery-card.is-featured .gallery-card-media,
-  .gallery-card .gallery-card-media {
-    aspect-ratio: 4 / 4.8;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.85rem;
   }
 
   .gallery-card-copy {
     padding: 0.75rem 0.8rem 0.85rem;
+  }
+
+  .gallery-badge {
+    max-width: 100%;
+    padding: 0.34rem 0.58rem;
+    font-size: 0.66rem;
+    letter-spacing: 0.1em;
+    white-space: nowrap;
   }
 
   .gallery-card-copy h3 {
@@ -1204,15 +1391,6 @@ watch(mobileMenuOpen, (isOpen) => {
 
   .gallery-cta p {
     font-size: 0.85rem;
-  }
-
-  .gallery-mobile-hint {
-    display: block;
-    margin: 0.55rem auto 0;
-    color: #bca67c;
-    font-size: 0.72rem;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
   }
 
   .gallery-cta-btn {
@@ -1284,48 +1462,6 @@ watch(mobileMenuOpen, (isOpen) => {
     padding: 1rem;
   }
 
-  .contact-shell {
-    gap: 1.35rem;
-  }
-
-  .contact-copy h2 {
-    margin-top: 0.35rem;
-    margin-bottom: 1rem;
-  }
-
-  .contact-intro {
-    margin-top: 0;
-    margin-bottom: 1.35rem;
-  }
-
-  .contact-status {
-    gap: 0.8rem;
-    margin-top: 0;
-    margin-bottom: 1.25rem;
-    padding-top: 0.85rem;
-    padding-bottom: 0.85rem;
-  }
-
-  .contact-status strong {
-    font-size: 0.95rem;
-  }
-
-  .contact-status p {
-    font-size: 0.82rem;
-  }
-
-  .contact-actions {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0.6rem;
-    margin-top: 0;
-    margin-bottom: 1.25rem;
-  }
-
-  .contact-action-btn {
-    width: 100%;
-  }
-
   .reviews-copy {
     padding-top: 0.7rem;
   }
@@ -1335,51 +1471,7 @@ watch(mobileMenuOpen, (isOpen) => {
   }
 
   .contact-info-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.85rem;
-  }
-
-  .contact-card {
-    padding: 0.95rem 0.82rem;
-  }
-
-  .contact-card-label {
-    margin-bottom: 0.38rem;
-    font-size: 0.66rem;
-  }
-
-  .contact-card a,
-  .contact-card p {
-    font-size: 0.88rem;
-    line-height: 1.42;
-  }
-
-  .hours-head h3 {
-    font-size: clamp(1.45rem, 6.2vw, 2rem);
-  }
-
-  .hours-head {
-    margin-bottom: 1.15rem;
-  }
-
-  .hours-list {
-    gap: 0.7rem;
-    margin-top: 0;
-  }
-
-  .hours-row {
-    gap: 0.7rem;
-    padding-top: 0.78rem;
-    padding-bottom: 0.78rem;
-  }
-
-  .hours-day span {
-    font-size: 0.62rem;
-  }
-
-  .hours-day strong,
-  .hours-time {
-    font-size: 0.88rem;
+    gap: 0.75rem;
   }
 
   .site-footer {
@@ -1395,18 +1487,27 @@ watch(mobileMenuOpen, (isOpen) => {
     letter-spacing: 0.03em;
   }
 
-  .top-mark {
-    align-items: flex-end;
-    gap: 0.28rem;
+  .logo-build {
+    width: min(84vw, 22rem);
+    padding-inline: 0.5rem;
   }
 
-  .top-line {
-    width: 2.2rem;
-    margin-top: 1.32rem;
+  .top-mark,
+  .flourish-top,
+  .flourish-bottom {
+    display: none;
   }
 
-  .swirl {
-    height: 1.65rem;
+  .logo-core {
+    margin-top: 0.55rem;
+  }
+
+  .line-title {
+    margin-top: 0.2rem;
+  }
+
+  .line-subtitle {
+    margin-top: 0.15rem;
   }
 
   .nav-wrap {
@@ -1419,17 +1520,57 @@ watch(mobileMenuOpen, (isOpen) => {
     border-radius: 13px;
   }
 
+  .nav-toggle span {
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  .nav-toggle span:first-child {
+    top: calc(50% - 8px);
+  }
+
+  .nav-toggle span:nth-child(2) {
+    top: 50%;
+  }
+
+  .nav-toggle span:nth-child(3) {
+    top: calc(50% + 8px);
+  }
+
+  .nav-toggle.is-active span:first-child {
+    top: 50%;
+    transform: translate(-50%, -50%) rotate(45deg);
+  }
+
+  .nav-toggle.is-active span:nth-child(3) {
+    top: 50%;
+    transform: translate(-50%, -50%) rotate(-45deg);
+  }
+
   .nav-menu {
-    align-items: stretch;
-    justify-content: flex-start;
-    gap: 0.65rem;
-    padding: calc(var(--nav-height) + 1.2rem) 0.9rem 6.4rem;
+    gap: 1.1rem;
+    padding: calc(var(--nav-height) + 1.8rem) 1.2rem 6.4rem;
   }
 
   .nav-menu a {
-    width: min(100%, 22rem);
-    padding: 0.82rem 0.95rem;
-    font-size: 0.92rem;
+    width: min(100%, 24rem);
+    padding: 0.55rem 0.75rem;
+    border: 0;
+    background: transparent;
+    color: rgba(245, 241, 230, 0.92);
+    letter-spacing: 0.06em;
+    font-family: Oswald, sans-serif;
+    font-size: 1.45rem;
+    font-weight: 500;
+    line-height: 1.05;
+    text-align: center;
+    text-transform: uppercase;
+    position: relative;
+  }
+
+  .nav-menu a.is-active {
+    color: #e3bf67;
+    text-shadow: 0 0 18px rgba(215, 183, 103, 0.18);
   }
 }
 
@@ -1445,6 +1586,30 @@ watch(mobileMenuOpen, (isOpen) => {
   }
 }
 
+@keyframes nav-skip-in {
+  from {
+    opacity: 0;
+    transform: translateY(-12px) scale(0.985);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes page-skip-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .bg-video {
     display: none;
@@ -1452,6 +1617,7 @@ watch(mobileMenuOpen, (isOpen) => {
 
   .loader-wrap *,
   .page-content,
+  .nav-wrap,
   .nav-menu,
   .hero-primary-btn,
   .hero-secondary-btn,
