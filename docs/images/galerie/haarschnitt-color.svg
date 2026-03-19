@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000" role="img" aria-labelledby="title desc">
+  <title id="title">Platzhalter Farbe und Glanz</title>
+  <desc id="desc">Platzhalter fuer Color und Finish Bild</desc>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#18120d" />
+      <stop offset="100%" stop-color="#3f2f17" />
+    </linearGradient>
+  </defs>
+  <rect width="800" height="1000" fill="url(#bg)" />
+  <rect x="80" y="120" width="640" height="760" rx="52" fill="#ffffff" fill-opacity="0.03" stroke="#d7b767" stroke-opacity="0.3" stroke-width="4" />
+  <text x="400" y="470" fill="#d7b767" font-family="Oswald, Arial, sans-serif" font-size="66" text-anchor="middle">COLOR FINISH</text>
+  <text x="400" y="545" fill="#f6e7c1" font-family="Arial, sans-serif" font-size="30" text-anchor="middle">Platzhalter fuer Farbe, Glanz oder Highlights</text>
+  <text x="400" y="740" fill="#cdb27a" font-family="Arial, sans-serif" font-size="26" text-anchor="middle">Kann spaeter mit JPG, PNG oder WebP ersetzt werden</text>
+</svg>

@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000" role="img" aria-labelledby="title desc">
+  <title id="title">Platzhalter Damen Haarschnitt</title>
+  <desc id="desc">Platzhalter fuer normales Damen Haarschnitt Bild</desc>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#211b14" />
+      <stop offset="100%" stop-color="#111111" />
+    </linearGradient>
+  </defs>
+  <rect width="800" height="1000" fill="url(#bg)" />
+  <circle cx="400" cy="320" r="120" fill="#d7b767" fill-opacity="0.15" stroke="#d7b767" stroke-opacity="0.35" stroke-width="3" />
+  <rect x="220" y="500" width="360" height="180" rx="30" fill="#ffffff" fill-opacity="0.04" stroke="#d7b767" stroke-opacity="0.25" />
+  <text x="400" y="560" fill="#d7b767" font-family="Oswald, Arial, sans-serif" font-size="64" text-anchor="middle">DAMEN CUT</text>
+  <text x="400" y="625" fill="#f6e7c1" font-family="Arial, sans-serif" font-size="28" text-anchor="middle">Platzhalter fuer ein echtes Haarschnittfoto</text>
+  <text x="400" y="820" fill="#cdb27a" font-family="Arial, sans-serif" font-size="26" text-anchor="middle">z. B. Bob, Stufen oder Foenen</text>
+</svg>

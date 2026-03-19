@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000" role="img" aria-labelledby="title desc">
+  <title id="title">Platzhalter Kurzhaar Vorher Nachher</title>
+  <desc id="desc">Vorher Nachher Platzhalter fuer Kurzhaarschnitt Bilder</desc>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#141414" />
+      <stop offset="100%" stop-color="#2f2618" />
+    </linearGradient>
+  </defs>
+  <rect width="800" height="1000" fill="url(#bg)" />
+  <rect x="40" y="40" width="720" height="920" rx="40" fill="none" stroke="#d7b767" stroke-opacity="0.45" stroke-width="4" />
+  <line x1="400" y1="110" x2="400" y2="890" stroke="#d7b767" stroke-opacity="0.4" stroke-width="3" stroke-dasharray="16 16" />
+  <text x="200" y="170" fill="#f6e7c1" font-family="Oswald, Arial, sans-serif" font-size="52" text-anchor="middle">VORHER</text>
+  <text x="600" y="170" fill="#f6e7c1" font-family="Oswald, Arial, sans-serif" font-size="52" text-anchor="middle">NACHHER</text>
+  <text x="400" y="480" fill="#d7b767" font-family="Oswald, Arial, sans-serif" font-size="62" text-anchor="middle">KURZHAAR</text>
+  <text x="400" y="560" fill="#f6e7c1" font-family="Arial, sans-serif" font-size="30" text-anchor="middle">Platzhalter fuer Vorher-Nachher Ergebnis</text>
+  <text x="400" y="760" fill="#cdb27a" font-family="Arial, sans-serif" font-size="28" text-anchor="middle">Ideal fuer Umstyling oder Fade Transformation</text>
+</svg>

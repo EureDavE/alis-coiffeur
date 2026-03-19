@@ -7,6 +7,8 @@ export default defineConfig({
   base: './',
   plugins: [vue()],
   build: {
+    outDir: 'docs',
+    emptyOutDir: true,
     rollupOptions: {
       input: {
         main: fileURLToPath(new URL('./index.html', import.meta.url)),
