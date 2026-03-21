@@ -18,6 +18,14 @@ const now = ref(new Date())
 const prefersReducedMotion = ref(false)
 const isMobileViewport = ref(false)
 const heroVideo = ref(null)
+const heroVideoReady = ref(false)
+const heroVideoFailed = ref(false)
+const activeGalleryLightbox = ref(null)
+const lightboxSlideDirection = ref(1)
+const gallerySlideDirection = ref({
+  kurzhaar: 1,
+  damenCut: 1,
+})
 const beforeAfterProgress = ref({
   kurzhaar: 0,
   damenCut: 0,
@@ -25,6 +33,14 @@ const beforeAfterProgress = ref({
 const beforeAfterDragging = ref({
   kurzhaar: false,
   damenCut: false,
+})
+const beforeAfterDragStartX = {
+  kurzhaar: 0,
+  damenCut: 0,
+}
+const gallerySlideIndex = ref({
+  kurzhaar: 0,
+  damenCut: 0,
 })
 const sectionElements = ref([])
 let servicesTimer = null
@@ -36,10 +52,27 @@ let visibilityHandler = null
 let mediaQueryList = null
 let mediaQueryHandler = null
 let scrollTicking = false
+let lightboxAutoplayTimer = null
 let servicesTouchStartX = 0
 let servicesTouchDeltaX = 0
+const gallerySwipeState = {}
+const lightboxSwipeState = {
+  startX: 0,
+  startY: 0,
+  deltaX: 0,
+  deltaY: 0,
+}
+const GALLERY_SWIPE_THRESHOLD = 42
+const GALLERY_SLIDE_LOCK_MS = 340
+const LIGHTBOX_AUTOPLAY_MS = 2600
+const GALLERY_AUTOPLAY_MS = 2800
+const galleryClickSuppressed = {}
+const beforeAfterClickSuppressed = {}
 const beforeAfterAutoTimers = {}
 const beforeAfterPhaseTimers = {}
+const gallerySlideLocks = {}
+const galleryAutoplayTimers = {}
+let lightboxSlideLocked = false
 
 const navItems = [
   { id: 'start', label: 'Start', href: '#' },
@@ -179,6 +212,7 @@ const serviceGroups = computed(() =>
 
 const visibleServices = computed(() => serviceGroups.value[servicePage.value] ?? [])
 const shouldUseHeroVideo = computed(() => !prefersReducedMotion.value)
+const shouldShowHeroPoster = computed(() => !shouldUseHeroVideo.value || heroVideoFailed.value)
 
 const previousServices = () => {
   servicePage.value = (servicePage.value - 1 + servicePages.value) % servicePages.value
@@ -219,8 +253,111 @@ const closeMobileMenu = () => {
   mobileMenuOpen.value = false
 }
 
+const syncBodyScrollLock = () => {
+  document.body.style.overflow = mobileMenuOpen.value || Boolean(activeGalleryLightbox.value) ? 'hidden' : ''
+}
+
 const toggleMobileMenu = () => {
   mobileMenuOpen.value = !mobileMenuOpen.value
+}
+
+const getGalleryItemByKey = (key) => galleryItems.find((item) => item.key === key)
+
+const lockGallerySlide = (key) => {
+  if (gallerySlideLocks[key]) return false
+  gallerySlideLocks[key] = window.setTimeout(() => {
+    window.clearTimeout(gallerySlideLocks[key])
+    delete gallerySlideLocks[key]
+  }, GALLERY_SLIDE_LOCK_MS)
+  return true
+}
+
+const lockLightboxSlide = () => {
+  if (lightboxSlideLocked) return false
+  lightboxSlideLocked = true
+  window.setTimeout(() => {
+    lightboxSlideLocked = false
+  }, GALLERY_SLIDE_LOCK_MS)
+  return true
+}
+
+const setGallerySlide = (key, nextIndex) => {
+  const item = getGalleryItemByKey(key)
+  const imageCount = item?.beforeAfterImages?.length ?? 0
+  if (!imageCount || !lockGallerySlide(key)) return
+  const currentIndex = gallerySlideIndex.value[key] ?? 0
+  gallerySlideDirection.value[key] = nextIndex === currentIndex ? 1 : nextIndex > currentIndex ? 1 : -1
+  gallerySlideIndex.value[key] = (nextIndex + imageCount) % imageCount
+}
+
+const shiftGallerySlide = (key, direction) => {
+  gallerySlideDirection.value[key] = direction >= 0 ? 1 : -1
+  setGallerySlide(key, (gallerySlideIndex.value[key] ?? 0) + direction)
+}
+
+const stopGalleryAutoplay = (key) => {
+  if (!galleryAutoplayTimers[key]) return
+  window.clearInterval(galleryAutoplayTimers[key])
+  delete galleryAutoplayTimers[key]
+}
+
+const startGalleryAutoplay = (key) => {
+  stopGalleryAutoplay(key)
+  if (!isMobileViewport.value || prefersReducedMotion.value || document.hidden) return
+  const item = getGalleryItemByKey(key)
+  if (!item?.beforeAfterImages?.length || item.beforeAfterImages.length < 2) return
+  galleryAutoplayTimers[key] = window.setInterval(() => {
+    shiftGallerySlide(key, 1)
+  }, GALLERY_AUTOPLAY_MS)
+}
+
+const syncGalleryAutoplay = () => {
+  galleryItems
+    .filter((item) => item.key && item.beforeAfterImages?.length > 1)
+    .forEach((item) => {
+      if (isMobileViewport.value && !prefersReducedMotion.value && !document.hidden) {
+        startGalleryAutoplay(item.key)
+      } else {
+        stopGalleryAutoplay(item.key)
+      }
+    })
+}
+
+const setBeforeAfterPosition = (key, nextValue) => {
+  beforeAfterProgress.value[key] = Math.min(1, Math.max(0, nextValue))
+}
+
+const openGalleryLightbox = (item, startIndex = 0) => {
+  if (!item?.beforeAfterImages?.length) return
+  activeGalleryLightbox.value = {
+    key: item.key,
+    title: item.title,
+    images: item.beforeAfterImages,
+    index: startIndex,
+  }
+}
+
+const closeGalleryLightbox = () => {
+  activeGalleryLightbox.value = null
+}
+
+const stopLightboxAutoplay = () => {
+  if (!lightboxAutoplayTimer) return
+  window.clearInterval(lightboxAutoplayTimer)
+  lightboxAutoplayTimer = null
+}
+
+const startLightboxAutoplay = () => {
+  stopLightboxAutoplay()
+  if (
+    prefersReducedMotion.value
+    || !activeGalleryLightbox.value?.images?.length
+    || activeGalleryLightbox.value.images.length < 2
+  ) return
+
+  lightboxAutoplayTimer = window.setInterval(() => {
+    shiftLightboxSlide(1)
+  }, LIGHTBOX_AUTOPLAY_MS)
 }
 
 const stopBeforeAfterAnimation = (key) => {
@@ -238,11 +375,11 @@ const updateBeforeAfterProgress = (key, sliderElement, clientX) => {
   if (!sliderElement) return
   const bounds = sliderElement.getBoundingClientRect()
   const rawProgress = (clientX - bounds.left) / bounds.width
-  beforeAfterProgress.value[key] = Math.min(1, Math.max(0, rawProgress))
+  setBeforeAfterPosition(key, rawProgress)
 }
 
-const startBeforeAfterAnimation = (key) => {
-  if (prefersReducedMotion.value || beforeAfterDragging.value[key]) return
+const startBeforeAfterAnimation = (key, force = false) => {
+  if (prefersReducedMotion.value || beforeAfterDragging.value[key] || (isMobileViewport.value && !force)) return
   stopBeforeAfterAnimation(key)
   beforeAfterProgress.value[key] = 0
   beforeAfterAutoTimers[key] = window.setTimeout(() => {
@@ -256,8 +393,84 @@ const startBeforeAfterAnimation = (key) => {
   }, 180)
 }
 
+const syncBeforeAfterAnimations = () => {
+  if (isMobileViewport.value || prefersReducedMotion.value) {
+    stopBeforeAfterAnimation('kurzhaar')
+    stopBeforeAfterAnimation('damenCut')
+    return
+  }
+  startBeforeAfterAnimation('kurzhaar')
+  startBeforeAfterAnimation('damenCut')
+}
+
+const shiftLightboxSlide = (direction) => {
+  if (!activeGalleryLightbox.value?.images?.length || !lockLightboxSlide()) return
+  const imageCount = activeGalleryLightbox.value.images.length
+  lightboxSlideDirection.value = direction >= 0 ? 1 : -1
+  activeGalleryLightbox.value = {
+    ...activeGalleryLightbox.value,
+    index: (activeGalleryLightbox.value.index + direction + imageCount) % imageCount,
+  }
+  startLightboxAutoplay()
+}
+
+const setLightboxSlide = (nextIndex) => {
+  if (!activeGalleryLightbox.value?.images?.length || !lockLightboxSlide()) return
+  const currentIndex = activeGalleryLightbox.value.index
+  lightboxSlideDirection.value = nextIndex === currentIndex ? 1 : nextIndex > currentIndex ? 1 : -1
+  activeGalleryLightbox.value = {
+    ...activeGalleryLightbox.value,
+    index: nextIndex,
+  }
+  startLightboxAutoplay()
+}
+
+const handleGalleryPointerDown = (key, event) => {
+  if (event.pointerType === 'mouse' && event.button !== 0) return
+  galleryClickSuppressed[key] = false
+  gallerySwipeState[key] = {
+    startX: event.clientX,
+    startY: event.clientY,
+    deltaX: 0,
+    deltaY: 0,
+  }
+  event.currentTarget?.setPointerCapture?.(event.pointerId)
+}
+
+const handleGalleryPointerMove = (key, event) => {
+  if (!gallerySwipeState[key]) return
+  gallerySwipeState[key].deltaX = event.clientX - gallerySwipeState[key].startX
+  gallerySwipeState[key].deltaY = event.clientY - gallerySwipeState[key].startY
+}
+
+const handleGalleryPointerUp = (key, event) => {
+  const swipeState = gallerySwipeState[key]
+  if (!swipeState) return
+  event.currentTarget?.releasePointerCapture?.(event.pointerId)
+  const isHorizontalSwipe =
+    Math.abs(swipeState.deltaX) >= GALLERY_SWIPE_THRESHOLD
+    && Math.abs(swipeState.deltaX) > Math.abs(swipeState.deltaY)
+  if (isHorizontalSwipe) {
+    galleryClickSuppressed[key] = true
+    shiftGallerySlide(key, swipeState.deltaX < 0 ? 1 : -1)
+    startGalleryAutoplay(key)
+  }
+  delete gallerySwipeState[key]
+}
+
+const handleGalleryViewerClick = (item) => {
+  if (galleryClickSuppressed[item.key]) {
+    galleryClickSuppressed[item.key] = false
+    return
+  }
+  openGalleryLightbox(item, gallerySlideIndex.value[item.key] ?? 0)
+}
+
 const handleBeforeAfterPointerDown = (key, event) => {
+  if (event.pointerType === 'mouse' && event.button !== 0) return
+  beforeAfterClickSuppressed[key] = false
   beforeAfterDragging.value[key] = true
+  beforeAfterDragStartX[key] = event.clientX
   stopBeforeAfterAnimation(key)
   event.currentTarget?.setPointerCapture?.(event.pointerId)
   updateBeforeAfterProgress(key, event.currentTarget, event.clientX)
@@ -268,11 +481,51 @@ const handleBeforeAfterPointerMove = (key, event) => {
   updateBeforeAfterProgress(key, event.currentTarget, event.clientX)
 }
 
-const handleBeforeAfterPointerUp = (key, event) => {
+const handleBeforeAfterPointerUp = (item, event) => {
+  const key = item.key
   if (!beforeAfterDragging.value[key]) return
   event?.currentTarget?.releasePointerCapture?.(event.pointerId)
   beforeAfterDragging.value[key] = false
+  if (Math.abs((event.clientX ?? 0) - beforeAfterDragStartX[key]) >= 8) {
+    beforeAfterClickSuppressed[key] = true
+  }
   startBeforeAfterAnimation(key)
+}
+
+const handleBeforeAfterClick = (item) => {
+  if (beforeAfterClickSuppressed[item.key]) {
+    beforeAfterClickSuppressed[item.key] = false
+    return
+  }
+  openGalleryLightbox(item, beforeAfterProgress.value[item.key] >= 0.5 ? 1 : 0)
+}
+
+const handleLightboxPointerDown = (event) => {
+  if (event.pointerType === 'mouse' && event.button !== 0) return
+  lightboxSwipeState.startX = event.clientX
+  lightboxSwipeState.startY = event.clientY
+  lightboxSwipeState.deltaX = 0
+  lightboxSwipeState.deltaY = 0
+  event.currentTarget?.setPointerCapture?.(event.pointerId)
+}
+
+const handleLightboxPointerMove = (event) => {
+  lightboxSwipeState.deltaX = event.clientX - lightboxSwipeState.startX
+  lightboxSwipeState.deltaY = event.clientY - lightboxSwipeState.startY
+}
+
+const handleLightboxPointerUp = (event) => {
+  event.currentTarget?.releasePointerCapture?.(event.pointerId)
+  const isHorizontalSwipe =
+    Math.abs(lightboxSwipeState.deltaX) >= GALLERY_SWIPE_THRESHOLD
+    && Math.abs(lightboxSwipeState.deltaX) > Math.abs(lightboxSwipeState.deltaY)
+  if (isHorizontalSwipe) {
+    shiftLightboxSlide(lightboxSwipeState.deltaX < 0 ? 1 : -1)
+  }
+  lightboxSwipeState.startX = 0
+  lightboxSwipeState.startY = 0
+  lightboxSwipeState.deltaX = 0
+  lightboxSwipeState.deltaY = 0
 }
 
 const collectSectionElements = () => {
@@ -302,6 +555,21 @@ const syncViewportState = () => {
   isMobileViewport.value = window.innerWidth <= 640
 }
 
+const updateHeroVideoState = () => {
+  const videoElement = heroVideo.value
+  heroVideoReady.value = Boolean(videoElement && videoElement.readyState >= 2)
+}
+
+const markHeroVideoReady = () => {
+  heroVideoFailed.value = false
+  heroVideoReady.value = true
+}
+
+const handleHeroVideoError = () => {
+  heroVideoReady.value = false
+  heroVideoFailed.value = true
+}
+
 const syncHeroPlayback = async () => {
   if (typeof window === 'undefined') return
   const videoElement = heroVideo.value
@@ -312,10 +580,12 @@ const syncHeroPlayback = async () => {
     return
   }
 
+  updateHeroVideoState()
+
   try {
     await videoElement.play()
   } catch {
-    // Autoplay can be blocked transiently; the poster image still covers the hero.
+    // Autoplay can be blocked transiently; the first loaded frame can still stay visible.
   }
 }
 
@@ -371,8 +641,7 @@ onMounted(() => {
     syncMotionPreference()
     syncHeroPlayback()
     startServicesAutoplay()
-    startBeforeAfterAnimation('kurzhaar')
-    startBeforeAfterAnimation('damenCut')
+    syncBeforeAfterAnimations()
   }
   syncMotionPreference()
   if (mediaQueryList.addEventListener) {
@@ -389,7 +658,10 @@ onMounted(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
     collectSectionElements()
     setupRevealAnimations()
+    updateHeroVideoState()
     syncHeroPlayback()
+    syncBeforeAfterAnimations()
+    syncGalleryAutoplay()
   }
   if (skipLoader) {
     window.requestAnimationFrame(() => {
@@ -407,8 +679,6 @@ onMounted(() => {
     }, prefersReducedMotion.value ? 900 : isMobileViewport.value ? 1550 : 1800)
   }
   startServicesAutoplay()
-  startBeforeAfterAnimation('kurzhaar')
-  startBeforeAfterAnimation('damenCut')
   clockTimer = window.setInterval(() => {
     now.value = new Date()
   }, 60000)
@@ -417,6 +687,8 @@ onMounted(() => {
     if (window.innerWidth > 640) closeMobileMenu()
     collectSectionElements()
     syncHeroPlayback()
+    syncBeforeAfterAnimations()
+    syncGalleryAutoplay()
   }
   scrollHandler = () => {
     if (scrollTicking) return
@@ -429,6 +701,7 @@ onMounted(() => {
   visibilityHandler = () => {
     syncHeroPlayback()
     startServicesAutoplay()
+    syncGalleryAutoplay()
   }
   window.addEventListener('resize', resizeHandler)
   window.addEventListener('scroll', scrollHandler, { passive: true })
@@ -439,6 +712,9 @@ onMounted(() => {
 onBeforeUnmount(() => {
   if (servicesTimer) window.clearInterval(servicesTimer)
   if (clockTimer) window.clearInterval(clockTimer)
+  stopLightboxAutoplay()
+  Object.keys(galleryAutoplayTimers).forEach((key) => stopGalleryAutoplay(key))
+  Object.values(gallerySlideLocks).forEach((timer) => window.clearTimeout(timer))
   stopBeforeAfterAnimation('kurzhaar')
   stopBeforeAfterAnimation('damenCut')
   if (revealObserver) revealObserver.disconnect()
@@ -456,7 +732,30 @@ onBeforeUnmount(() => {
 })
 
 watch(mobileMenuOpen, (isOpen) => {
-  document.body.style.overflow = isOpen ? 'hidden' : ''
+  syncBodyScrollLock()
+})
+
+watch(shouldUseHeroVideo, async (enabled) => {
+  heroVideoReady.value = false
+  heroVideoFailed.value = false
+
+  if (!enabled) {
+    heroVideo.value?.pause()
+    return
+  }
+
+  await nextTick()
+  updateHeroVideoState()
+  syncHeroPlayback()
+})
+
+watch(activeGalleryLightbox, () => {
+  syncBodyScrollLock()
+  if (activeGalleryLightbox.value) {
+    startLightboxAutoplay()
+    return
+  }
+  stopLightboxAutoplay()
 })
 </script>
 
@@ -540,18 +839,22 @@ watch(mobileMenuOpen, (isOpen) => {
           v-if="shouldUseHeroVideo"
           ref="heroVideo"
           class="bg-video"
+          :class="{ 'is-ready': heroVideoReady }"
           autoplay
           muted
           loop
           playsinline
-          preload="metadata"
-          :poster="heroPoster"
+          preload="auto"
           aria-hidden="true"
+          @loadeddata="markHeroVideoReady"
+          @canplay="markHeroVideoReady"
+          @playing="markHeroVideoReady"
+          @error="handleHeroVideoError"
         >
           <source :src="landingVideo" type="video/mp4" />
         </video>
         <img
-          v-else
+          v-if="shouldShowHeroPoster"
           class="bg-poster"
           :src="heroPoster"
           alt=""
@@ -711,43 +1014,87 @@ watch(mobileMenuOpen, (isOpen) => {
             >
               <div class="gallery-card-media">
                 <template v-if="item.beforeAfterImages">
-                  <div
-                    class="gallery-before-after-slider"
-                    @pointerdown="handleBeforeAfterPointerDown(item.key, $event)"
-                    @pointermove="handleBeforeAfterPointerMove(item.key, $event)"
-                    @pointerup="handleBeforeAfterPointerUp(item.key, $event)"
-                    @pointercancel="handleBeforeAfterPointerUp(item.key, $event)"
-                    @pointerleave="handleBeforeAfterPointerUp(item.key, $event)"
-                  >
-                    <figure class="gallery-before-after-base">
-                      <img
-                        :src="item.beforeAfterImages[0].src"
-                        :alt="item.beforeAfterImages[0].alt"
-                        class="gallery-image"
-                        loading="lazy"
-                        decoding="async"
-                      />
-                    </figure>
-
-                    <figure
-                      class="gallery-before-after-overlay"
-                      :style="{ clipPath: `inset(0 0 0 ${(1 - beforeAfterProgress[item.key]) * 100}%)` }"
-                    >
-                      <img
-                        :src="item.beforeAfterImages[1].src"
-                        :alt="item.beforeAfterImages[1].alt"
-                        class="gallery-image"
-                        loading="lazy"
-                        decoding="async"
-                      />
-                    </figure>
-
+                  <template v-if="isMobileViewport">
                     <div
-                      class="gallery-before-after-divider"
-                      :class="{ 'is-hidden': beforeAfterProgress[item.key] <= 0.02 || beforeAfterProgress[item.key] >= 0.98 }"
-                      :style="{ left: `${beforeAfterProgress[item.key] * 100}%` }"
-                    ></div>
-                  </div>
+                      class="gallery-swipe-viewer"
+                      :style="{
+                        '--gallery-swipe-enter-x': `${22 * (gallerySlideDirection[item.key] ?? 1)}px`,
+                        '--gallery-swipe-leave-x': `${-22 * (gallerySlideDirection[item.key] ?? 1)}px`,
+                      }"
+                      @pointerdown="handleGalleryPointerDown(item.key, $event)"
+                      @pointermove="handleGalleryPointerMove(item.key, $event)"
+                      @pointerup="handleGalleryPointerUp(item.key, $event)"
+                      @pointercancel="handleGalleryPointerUp(item.key, $event)"
+                      @click="handleGalleryViewerClick(item)"
+                    >
+                      <Transition name="gallery-swipe-slide" mode="out-in">
+                        <figure
+                          :key="`${item.key}-${gallerySlideIndex[item.key] ?? 0}`"
+                          class="gallery-swipe-frame"
+                        >
+                          <img
+                            :src="item.beforeAfterImages[gallerySlideIndex[item.key] ?? 0].src"
+                            :alt="item.beforeAfterImages[gallerySlideIndex[item.key] ?? 0].alt"
+                            class="gallery-image"
+                            loading="lazy"
+                            decoding="async"
+                          />
+                        </figure>
+                      </Transition>
+                      <span class="gallery-swipe-badge">
+                        {{ item.beforeAfterImages[gallerySlideIndex[item.key] ?? 0].label }}
+                      </span>
+                    </div>
+                    <div class="gallery-swipe-dots" aria-label="Vorher Nachher Auswahl">
+                      <button
+                        v-for="(image, index) in item.beforeAfterImages"
+                        :key="`${item.key}-${image.label}`"
+                        type="button"
+                        class="gallery-swipe-dot"
+                        :class="{ 'is-active': (gallerySlideIndex[item.key] ?? 0) === index }"
+                        :aria-label="`${image.label} anzeigen`"
+                        @click="setGallerySlide(item.key, index)"
+                      ></button>
+                    </div>
+                  </template>
+                  <template v-else>
+                    <div
+                      class="gallery-before-after-slider"
+                      @pointerdown="handleBeforeAfterPointerDown(item.key, $event)"
+                      @pointermove="handleBeforeAfterPointerMove(item.key, $event)"
+                      @pointerup="handleBeforeAfterPointerUp(item, $event)"
+                      @pointercancel="handleBeforeAfterPointerUp(item, $event)"
+                      @pointerleave="handleBeforeAfterPointerUp(item, $event)"
+                      @click="handleBeforeAfterClick(item)"
+                    >
+                      <figure class="gallery-before-after-base">
+                        <img
+                          :src="item.beforeAfterImages[0].src"
+                          :alt="item.beforeAfterImages[0].alt"
+                          class="gallery-image"
+                          loading="lazy"
+                          decoding="async"
+                        />
+                      </figure>
+                      <figure
+                        class="gallery-before-after-overlay"
+                        :style="{ clipPath: `inset(0 0 0 ${(1 - beforeAfterProgress[item.key]) * 100}%)` }"
+                      >
+                        <img
+                          :src="item.beforeAfterImages[1].src"
+                          :alt="item.beforeAfterImages[1].alt"
+                          class="gallery-image"
+                          loading="lazy"
+                          decoding="async"
+                        />
+                      </figure>
+                      <div
+                        class="gallery-before-after-divider"
+                        :class="{ 'is-hidden': beforeAfterProgress[item.key] <= 0.02 || beforeAfterProgress[item.key] >= 0.98 }"
+                        :style="{ left: `${beforeAfterProgress[item.key] * 100}%` }"
+                      ></div>
+                    </div>
+                  </template>
                 </template>
                 <img
                   v-else
@@ -811,6 +1158,89 @@ watch(mobileMenuOpen, (isOpen) => {
           </div>
         </div>
       </section>
+
+      <Teleport to="body">
+        <Transition name="gallery-lightbox-enter">
+          <div
+            v-if="activeGalleryLightbox"
+            class="gallery-lightbox"
+            role="dialog"
+            aria-modal="true"
+            :aria-label="activeGalleryLightbox.images[activeGalleryLightbox.index].alt"
+            @click.self="closeGalleryLightbox"
+          >
+            <button
+              type="button"
+              class="gallery-lightbox-close"
+              aria-label="Bild schliessen"
+              @click="closeGalleryLightbox"
+            >
+              ×
+            </button>
+
+            <figure class="gallery-lightbox-figure">
+              <div
+                class="gallery-lightbox-swipe"
+                :style="{
+                  '--gallery-swipe-enter-x': `${28 * lightboxSlideDirection}px`,
+                  '--gallery-swipe-leave-x': `${-28 * lightboxSlideDirection}px`,
+                }"
+                @pointerdown="handleLightboxPointerDown"
+                @pointermove="handleLightboxPointerMove"
+                @pointerup="handleLightboxPointerUp"
+                @pointercancel="handleLightboxPointerUp"
+              >
+                <button
+                  v-if="activeGalleryLightbox.images.length > 1"
+                  type="button"
+                  class="gallery-arrow-btn gallery-arrow-btn-lightbox is-left"
+                  aria-label="Vorheriges Bild anzeigen"
+                  @pointerdown.stop
+                  @pointerup.stop
+                  @click.stop="shiftLightboxSlide(-1)"
+                >
+                  &lt;
+                </button>
+                <div class="gallery-lightbox-stage">
+                  <span class="gallery-lightbox-badge">
+                    {{ activeGalleryLightbox.images[activeGalleryLightbox.index].label }}
+                  </span>
+                  <Transition name="gallery-swipe-slide" mode="out-in">
+                    <img
+                      :key="`lightbox-${activeGalleryLightbox.key}-${activeGalleryLightbox.index}`"
+                      :src="activeGalleryLightbox.images[activeGalleryLightbox.index].src"
+                      :alt="activeGalleryLightbox.images[activeGalleryLightbox.index].alt"
+                      class="gallery-lightbox-image"
+                    />
+                  </Transition>
+                </div>
+                <button
+                  v-if="activeGalleryLightbox.images.length > 1"
+                  type="button"
+                  class="gallery-arrow-btn gallery-arrow-btn-lightbox is-right"
+                  aria-label="Nächstes Bild anzeigen"
+                  @pointerdown.stop
+                  @pointerup.stop
+                  @click.stop="shiftLightboxSlide(1)"
+                >
+                  &gt;
+                </button>
+              </div>
+              <div class="gallery-swipe-dots is-lightbox" aria-label="Grossansicht Auswahl">
+                <button
+                  v-for="(image, index) in activeGalleryLightbox.images"
+                  :key="`lightbox-${image.label}`"
+                  type="button"
+                  class="gallery-swipe-dot"
+                  :class="{ 'is-active': activeGalleryLightbox.index === index }"
+                  :aria-label="`${image.label} in Grossansicht anzeigen`"
+                  @click="setLightboxSlide(index)"
+                ></button>
+              </div>
+            </figure>
+          </div>
+        </Transition>
+      </Teleport>
 
       <section id="kontakt" class="contact-section" data-reveal>
         <div class="contact-shell">
@@ -892,6 +1322,45 @@ watch(mobileMenuOpen, (isOpen) => {
 
       <footer class="site-footer">
         <div class="site-footer-box">
+          <div class="site-footer-links">
+            <a
+              class="site-footer-link"
+              href="https://www.google.com/maps/dir/?api=1&destination=Ottenbacherstrasse+2a,+8912+Obfelden"
+              target="_blank"
+              rel="noreferrer"
+              aria-label="Standort von Alis Coiffeur in Google Maps öffnen"
+            >
+              <span class="site-footer-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" role="presentation">
+                  <path d="M12 21s6-5.34 6-11a6 6 0 1 0-12 0c0 5.66 6 11 6 11Z" />
+                  <circle cx="12" cy="10" r="2.5" />
+                </svg>
+              </span>
+              <span class="site-footer-link-copy">
+                <strong>Standort</strong>
+                <span>Ottenbacherstrasse 2a, 8912 Obfelden</span>
+              </span>
+            </a>
+            <a
+              class="site-footer-link"
+              href="https://www.instagram.com/alis_coiffeur_obfelden/"
+              target="_blank"
+              rel="noreferrer"
+              aria-label="Instagram von Alis Coiffeur öffnen"
+            >
+              <span class="site-footer-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" role="presentation">
+                  <rect x="3.5" y="3.5" width="17" height="17" rx="5" ry="5" />
+                  <circle cx="12" cy="12" r="4" />
+                  <circle cx="17.4" cy="6.6" r="1.2" />
+                </svg>
+              </span>
+              <span class="site-footer-link-copy">
+                <strong>Instagram</strong>
+                <span>@alis_coiffeur_obfelden</span>
+              </span>
+            </a>
+          </div>
           <p>Developed by David Kutlesa</p>
         </div>
       </footer>
@@ -931,6 +1400,11 @@ watch(mobileMenuOpen, (isOpen) => {
 }
 
 .bg-video {
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
+
+.bg-video.is-ready {
   opacity: 1;
 }
 
@@ -946,6 +1420,17 @@ watch(mobileMenuOpen, (isOpen) => {
 
 .nav-wrap.is-skip-enter {
   animation: nav-skip-in 0.42s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.page-content {
+  opacity: 0;
+  transform: none !important;
+  transition: opacity 0.52s ease;
+}
+
+.page-content.is-visible {
+  opacity: 1;
+  transform: none !important;
 }
 
 .page-content.is-skip-enter {
@@ -978,6 +1463,78 @@ watch(mobileMenuOpen, (isOpen) => {
   width: min(100%, 1180px);
   margin: 0 auto;
   padding: 0.2rem 0 0;
+}
+
+.site-footer-links {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.8rem;
+  margin-bottom: 0.95rem;
+}
+
+.site-footer-link {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid rgba(215, 183, 103, 0.18);
+  border-radius: 18px;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02)),
+    rgba(10, 10, 10, 0.8);
+  color: #fff4d6;
+  text-decoration: none;
+  transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+}
+
+.site-footer-link:hover {
+  transform: translateY(-2px);
+  border-color: rgba(215, 183, 103, 0.42);
+  background:
+    linear-gradient(145deg, rgba(215, 183, 103, 0.1), rgba(255, 255, 255, 0.03)),
+    rgba(10, 10, 10, 0.88);
+}
+
+.site-footer-icon {
+  flex: 0 0 auto;
+  width: 2.6rem;
+  height: 2.6rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(215, 183, 103, 0.22);
+  border-radius: 999px;
+  background: rgba(215, 183, 103, 0.08);
+  color: #d7b767;
+}
+
+.site-footer-icon svg {
+  width: 1.2rem;
+  height: 1.2rem;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.site-footer-link-copy {
+  display: grid;
+  gap: 0.18rem;
+  min-width: 0;
+}
+
+.site-footer-link-copy strong {
+  color: #fff4d6;
+  font-size: 0.82rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.site-footer-link-copy span {
+  color: #d8c59b;
+  font-size: 0.84rem;
+  line-height: 1.35;
 }
 
 .site-footer-box p {
@@ -1032,6 +1589,27 @@ watch(mobileMenuOpen, (isOpen) => {
   aspect-ratio: 4 / 5;
   overflow: hidden;
   background: #121212;
+  position: relative;
+  isolation: isolate;
+}
+
+.gallery-arrow-btn {
+  width: 2.4rem;
+  height: 2.4rem;
+  border: 1px solid rgba(215, 183, 103, 0.32);
+  border-radius: 999px;
+  background: rgba(8, 8, 8, 0.56);
+  color: #f6e7c1;
+  font: inherit;
+  font-size: 1rem;
+  line-height: 1;
+  transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+}
+
+.gallery-arrow-btn:hover {
+  transform: translateY(-1px);
+  background: rgba(215, 183, 103, 0.18);
+  border-color: rgba(215, 183, 103, 0.56);
 }
 
 .gallery-before-after-slider {
@@ -1040,6 +1618,8 @@ watch(mobileMenuOpen, (isOpen) => {
   cursor: ew-resize;
   touch-action: pan-y;
   user-select: none;
+  overscroll-behavior: contain;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .gallery-before-after-base,
@@ -1047,6 +1627,7 @@ watch(mobileMenuOpen, (isOpen) => {
   position: absolute;
   inset: 0;
   margin: 0;
+  backface-visibility: hidden;
 }
 
 .gallery-before-after-overlay {
@@ -1070,7 +1651,7 @@ watch(mobileMenuOpen, (isOpen) => {
   transform: translateX(-50%);
   pointer-events: none;
   will-change: left;
-  transition: left 0.72s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: left 0.72s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease;
 }
 
 .gallery-before-after-divider.is-hidden {
@@ -1081,11 +1662,115 @@ watch(mobileMenuOpen, (isOpen) => {
   transition: none;
 }
 
+.gallery-swipe-viewer {
+  position: relative;
+  height: 100%;
+  cursor: ew-resize;
+  touch-action: pan-y;
+  user-select: none;
+  overscroll-behavior: contain;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.gallery-swipe-frame {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+}
+
+.gallery-swipe-slide-enter-active,
+.gallery-swipe-slide-leave-active {
+  transition: opacity 0.32s ease, transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.gallery-swipe-slide-enter-from {
+  opacity: 0;
+  transform: translateX(var(--gallery-swipe-enter-x, 22px)) scale(0.985);
+}
+
+.gallery-swipe-slide-leave-to {
+  opacity: 0;
+  transform: translateX(var(--gallery-swipe-leave-x, -22px)) scale(0.985);
+}
+
+@keyframes gallery-swipe-hint-float {
+  0%,
+  100% {
+    transform: translateX(0);
+    opacity: 0.72;
+  }
+  50% {
+    transform: translateX(-8px);
+    opacity: 1;
+  }
+}
+
+.gallery-swipe-badge,
+.gallery-lightbox-badge {
+  position: absolute;
+  top: 0.9rem;
+  left: 0.9rem;
+  z-index: 2;
+  border: 1px solid rgba(215, 183, 103, 0.3);
+  border-radius: 999px;
+  background: rgba(8, 8, 8, 0.62);
+  color: #fff1cb;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 0.5rem 0.7rem;
+}
+
+.gallery-swipe-hint {
+  position: absolute;
+  right: 0.9rem;
+  bottom: 0.9rem;
+  z-index: 2;
+  color: #f2e6c7;
+  font-size: 0.72rem;
+  letter-spacing: 0.05em;
+  padding: 0;
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.65);
+  animation: gallery-swipe-hint-float 1.9s ease-in-out infinite;
+}
+
 .gallery-image {
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+.gallery-swipe-dots {
+  display: flex;
+  justify-content: center;
+  gap: 0.55rem;
+  padding: 0.9rem 1rem 0;
+}
+
+.gallery-swipe-dots.is-lightbox {
+  padding-top: 0;
+}
+
+.gallery-swipe-dot {
+  width: 0.72rem;
+  height: 0.72rem;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.24);
+  padding: 0;
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.gallery-swipe-dot.is-active {
+  background: #d7b767;
+  transform: scale(1.08);
 }
 
 .gallery-card-copy {
@@ -1160,6 +1845,143 @@ watch(mobileMenuOpen, (isOpen) => {
   transform: translateY(-2px);
   border-color: rgba(215, 183, 103, 0.7);
   background: linear-gradient(135deg, rgba(215, 183, 103, 0.28), rgba(184, 134, 54, 0.42));
+}
+
+.gallery-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  align-items: center;
+  justify-items: center;
+  padding: 1.25rem;
+  background:
+    radial-gradient(circle at 20% 18%, rgba(215, 183, 103, 0.08), transparent 26%),
+    radial-gradient(circle at 78% 82%, rgba(215, 183, 103, 0.06), transparent 30%),
+    rgba(5, 5, 5, 0.94);
+  backdrop-filter: blur(14px);
+  overscroll-behavior: contain;
+}
+
+.gallery-lightbox-close {
+  position: absolute;
+  top: 1.1rem;
+  right: 1.1rem;
+  z-index: 4;
+  width: 3rem;
+  height: 3rem;
+  border: 1px solid rgba(215, 183, 103, 0.28);
+  border-radius: 999px;
+  background: rgba(18, 18, 18, 0.72);
+  color: #f6e7c1;
+  font: inherit;
+  font-size: 1.5rem;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.gallery-lightbox-close:hover {
+  background: rgba(215, 183, 103, 0.12);
+  border-color: rgba(215, 183, 103, 0.5);
+  transform: translateY(-1px);
+}
+
+.gallery-lightbox-figure {
+  margin: 0;
+  display: grid;
+  gap: 0.9rem;
+  width: min(100%, 42rem);
+}
+
+.gallery-lightbox-swipe {
+  position: relative;
+  cursor: ew-resize;
+  touch-action: pan-y;
+  user-select: none;
+  overscroll-behavior: contain;
+  -webkit-tap-highlight-color: transparent;
+  padding-inline: 3.4rem;
+  display: grid;
+  justify-items: center;
+}
+
+.gallery-lightbox-stage {
+  position: relative;
+  width: 100%;
+}
+
+.gallery-lightbox-image {
+  display: block;
+  width: 100%;
+  max-height: calc(100svh - 10rem);
+  object-fit: contain;
+  border-radius: 26px;
+  box-shadow:
+    0 28px 70px rgba(0, 0, 0, 0.45),
+    0 0 0 1px rgba(215, 183, 103, 0.08);
+  will-change: transform, opacity;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+.gallery-lightbox-caption {
+  color: rgba(243, 223, 170, 0.88);
+  text-align: center;
+  font-size: 0.88rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.gallery-lightbox-stage .gallery-lightbox-badge {
+  top: 1rem;
+  left: 1rem;
+}
+
+.gallery-arrow-btn-lightbox {
+  position: absolute;
+  top: 50%;
+  z-index: 3;
+  width: 2.85rem;
+  height: 2.85rem;
+  background: rgba(18, 18, 18, 0.7);
+  backdrop-filter: blur(8px);
+  transform: translateY(-50%);
+}
+
+.gallery-arrow-btn-lightbox:hover {
+  transform: translateY(-50%) scale(1.03);
+}
+
+.gallery-arrow-btn-lightbox.is-left {
+  left: 0.4rem;
+}
+
+.gallery-arrow-btn-lightbox.is-right {
+  right: 0.4rem;
+}
+
+.gallery-lightbox-enter-enter-active,
+.gallery-lightbox-enter-leave-active {
+  transition: opacity 0.28s ease, transform 0.28s ease;
+}
+
+.gallery-lightbox-enter-enter-from,
+.gallery-lightbox-enter-leave-to {
+  opacity: 0;
+}
+
+.gallery-lightbox-enter-enter-from .gallery-lightbox-figure,
+.gallery-lightbox-enter-leave-to .gallery-lightbox-figure {
+  transform: translateY(14px) scale(0.97);
+}
+
+.gallery-lightbox-enter-enter-active .gallery-lightbox-figure,
+.gallery-lightbox-enter-leave-active .gallery-lightbox-figure {
+  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .service-price-link {
@@ -1590,6 +2412,19 @@ watch(mobileMenuOpen, (isOpen) => {
     gap: 0.85rem;
   }
 
+  .gallery-swipe-hint {
+    font-size: 0.66rem;
+    padding: 0;
+  }
+
+  .gallery-swipe-badge,
+  .gallery-lightbox-badge {
+    top: 0.75rem;
+    left: 0.75rem;
+    font-size: 0.68rem;
+    padding: 0.45rem 0.62rem;
+  }
+
   .gallery-card-copy {
     padding: 0.75rem 0.8rem 0.85rem;
   }
@@ -1619,6 +2454,72 @@ watch(mobileMenuOpen, (isOpen) => {
     min-height: 44px;
     padding: 0.68rem 0.95rem;
     font-size: 0.72rem;
+  }
+
+  .gallery-lightbox {
+    padding: 0.75rem 0.5rem 0.85rem;
+    align-items: center;
+  }
+
+  .gallery-lightbox-close {
+    top: 0.55rem;
+    right: 0.55rem;
+    width: 2.7rem;
+    height: 2.7rem;
+    font-size: 1.3rem;
+  }
+
+  .gallery-lightbox-figure {
+    width: min(100%, 100vw - 1rem);
+    gap: 0.55rem;
+    margin-top: 0;
+  }
+
+  .gallery-lightbox-swipe {
+    padding-inline: 0.25rem;
+    cursor: ew-resize;
+  }
+
+  .gallery-lightbox-stage {
+    width: 100%;
+  }
+
+  .gallery-lightbox-image {
+    width: 100%;
+    max-height: calc(100svh - 8.9rem);
+    border-radius: 22px;
+  }
+
+  .gallery-arrow-btn-lightbox {
+    top: 50%;
+    bottom: auto;
+    transform: translateY(-50%);
+    width: 2.7rem;
+    height: 2.7rem;
+    background: rgba(12, 12, 12, 0.58);
+  }
+
+  .gallery-arrow-btn-lightbox:hover {
+    transform: translateY(-50%);
+  }
+
+  .gallery-arrow-btn-lightbox.is-left {
+    left: 0.7rem;
+  }
+
+  .gallery-arrow-btn-lightbox.is-right {
+    right: 0.7rem;
+  }
+
+  .gallery-lightbox-caption {
+    font-size: 0.78rem;
+    line-height: 1.3;
+    padding-inline: 0.8rem;
+    opacity: 0.86;
+  }
+
+  .gallery-swipe-dots.is-lightbox {
+    padding-top: 0.35rem;
   }
 
   .price-section {
@@ -1702,6 +2603,17 @@ watch(mobileMenuOpen, (isOpen) => {
 
   .site-footer-box {
     padding: 0;
+  }
+
+  .site-footer-links {
+    grid-template-columns: 1fr;
+    gap: 0.7rem;
+    margin-bottom: 0.85rem;
+  }
+
+  .site-footer-link {
+    padding: 0.82rem 0.9rem;
+    border-radius: 16px;
   }
 
   .site-footer-box p {
@@ -1795,8 +2707,16 @@ watch(mobileMenuOpen, (isOpen) => {
   }
 
   .nav-menu {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
     gap: 0.85rem;
-    padding: calc(var(--nav-height) + 1.3rem) 1rem 6rem;
+    min-height: 100dvh;
+    padding:
+      max(calc(var(--nav-height) + 1rem), env(safe-area-inset-top) + 5.5rem)
+      1rem
+      max(2rem, env(safe-area-inset-bottom) + 1.2rem);
   }
 
   .nav-menu a {
@@ -1821,18 +2741,6 @@ watch(mobileMenuOpen, (isOpen) => {
   }
 }
 
-@supports (content-visibility: auto) {
-  .about-section,
-  .services-section,
-  .price-section,
-  .team-section,
-  .reviews-section,
-  .contact-section {
-    content-visibility: auto;
-    contain-intrinsic-size: 900px;
-  }
-}
-
 @keyframes nav-skip-in {
   from {
     opacity: 0;
@@ -1848,12 +2756,10 @@ watch(mobileMenuOpen, (isOpen) => {
 @keyframes page-skip-in {
   from {
     opacity: 0;
-    transform: translateY(14px);
   }
 
   to {
     opacity: 1;
-    transform: translateY(0);
   }
 }
 
