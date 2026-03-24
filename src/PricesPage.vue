@@ -153,14 +153,16 @@ const markHomeNavigation = () => {
 </template>
 
 <style scoped>
-@import "./restored.css";
-
 :global(html),
 :global(body) {
   margin: 0;
   max-width: 100%;
   overflow-x: hidden;
   background: #050505;
+}
+
+:global(*) {
+  box-sizing: border-box;
 }
 
 .prices-page {
@@ -173,8 +175,149 @@ const markHomeNavigation = () => {
     linear-gradient(180deg, #261c10, #171108 38%, #171108 100%);
 }
 
+.nav-wrap {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 2rem;
+  width: 100%;
+  min-height: var(--nav-height);
+  padding: 0.75rem 2rem;
+  background: linear-gradient(180deg, rgba(21, 21, 21, 0.92), rgba(21, 21, 21, 0.42));
+  border-bottom: 1px solid rgba(215, 183, 103, 0.2);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.22);
+}
+
+.brand {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.2rem;
+  justify-self: start;
+  color: inherit;
+  text-decoration: none;
+  line-height: 0.95;
+}
+
+.brand-logo {
+  color: #fff;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-family: Oswald, sans-serif;
+  font-size: clamp(2.3rem, 4.5vw, 3.8rem);
+  font-weight: 500;
+}
+
+.brand-subline {
+  color: #fff;
+  letter-spacing: 0.02em;
+  font-family: "Cormorant Garamond", serif;
+  font-size: 1rem;
+}
+
+.nav-right {
+  display: flex;
+  align-items: center;
+  justify-self: end;
+}
+
+.nav-toggle {
+  position: relative;
+  z-index: 22;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  justify-self: end;
+  width: 54px;
+  height: 54px;
+  padding: 0;
+  border: 1px solid rgba(215, 183, 103, 0.24);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(8px);
+}
+
+.nav-toggle span {
+  position: absolute;
+  width: 22px;
+  height: 2px;
+  border-radius: 999px;
+  background: #f3e5c0;
+  transition: transform 0.25s ease, opacity 0.2s ease, top 0.25s ease;
+}
+
+.nav-toggle span:first-child {
+  top: 18px;
+}
+
+.nav-toggle span:nth-child(2) {
+  top: 26px;
+}
+
+.nav-toggle span:nth-child(3) {
+  top: 34px;
+}
+
+.nav-toggle.is-active span:first-child {
+  top: 26px;
+  transform: rotate(45deg);
+}
+
+.nav-toggle.is-active span:nth-child(2) {
+  opacity: 0;
+}
+
+.nav-toggle.is-active span:nth-child(3) {
+  top: 26px;
+  transform: rotate(-45deg);
+}
+
+.nav-menu {
+  display: flex;
+  justify-content: center;
+  gap: 1.1rem;
+  padding: 0;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.nav-menu a {
+  padding: 0.35rem 0.2rem;
+  border-radius: 999px;
+  color: #ececec;
+  letter-spacing: 0.025em;
+  font-size: clamp(0.92rem, 1vw, 1.05rem);
+  text-decoration: none;
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.nav-menu a:hover {
+  color: #d7b767;
+}
+
 .nav-menu .is-active {
   color: #d7b767;
+}
+
+.cta-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 54px;
+  padding: 0.65rem 1.2rem;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 12px;
+  background: linear-gradient(135deg, #c89a49, #d7b767);
+  color: #130f09;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 0.92rem;
+  font-weight: 700;
+  text-decoration: none;
 }
 
 .prices-hero {

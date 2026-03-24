@@ -213,6 +213,11 @@ const serviceGroups = computed(() =>
 const visibleServices = computed(() => serviceGroups.value[servicePage.value] ?? [])
 const shouldUseHeroVideo = computed(() => !prefersReducedMotion.value)
 const shouldShowHeroPoster = computed(() => !shouldUseHeroVideo.value || heroVideoFailed.value)
+const heroDescription = computed(() =>
+  isMobileViewport.value
+    ? 'Coiffeur in Obfelden fuer Damen, Herren, Farbe und Styling. Modern, persoenlich und detailverliebt.'
+    : 'Ihr Coiffeur in Obfelden fuer Damen, Herren, Colorationen, Styling und gepflegte Beauty-Momente. Persoenlich, modern und mit Blick fuer Details.',
+)
 
 const previousServices = () => {
   servicePage.value = (servicePage.value - 1 + servicePages.value) % servicePages.value
@@ -351,6 +356,7 @@ const startLightboxAutoplay = () => {
   stopLightboxAutoplay()
   if (
     prefersReducedMotion.value
+    || document.hidden
     || !activeGalleryLightbox.value?.images?.length
     || activeGalleryLightbox.value.images.length < 2
   ) return
@@ -591,7 +597,7 @@ const syncHeroPlayback = async () => {
 
 const startServicesAutoplay = () => {
   if (servicesTimer) window.clearInterval(servicesTimer)
-  if (prefersReducedMotion.value || document.hidden) return
+  if (prefersReducedMotion.value || document.hidden || isMobileViewport.value || servicePages.value <= 1) return
   servicesTimer = window.setInterval(() => {
     nextServices()
   }, 4500)
@@ -877,10 +883,7 @@ watch(activeGalleryLightbox, () => {
           </h1>
           <div class="hero-line"></div>
           <p class="hero-subtitle">ALIS Coiffeur.</p>
-          <p class="hero-description">
-            Damen, Herren, Farbe, Styling und Beauty an einem Ort. Modern, herzlich und direkt in
-            Obfelden.
-          </p>
+          <p class="hero-description">{{ heroDescription }}</p>
           <div class="hero-actions">
             <a class="hero-primary-btn" href="./preise.html">Preise ansehen</a>
             <a class="hero-secondary-btn" href="tel:+41447616222">Jetzt anrufen</a>
@@ -1369,8 +1372,6 @@ watch(activeGalleryLightbox, () => {
 </template>
 
 <style scoped>
-@import "./restored.css";
-
 :global(html),
 :global(body) {
   max-width: 100%;
@@ -1450,6 +1451,16 @@ watch(activeGalleryLightbox, () => {
   min-height: auto;
   margin-top: 0;
   padding-top: 2.5rem;
+}
+
+.about-section,
+.services-section,
+.price-section,
+.team-section,
+.reviews-section,
+.contact-section {
+  content-visibility: auto;
+  contain-intrinsic-size: 900px;
 }
 
 .site-footer {
@@ -2320,9 +2331,10 @@ watch(activeGalleryLightbox, () => {
   }
 
   .hero-description {
-    max-width: 19.5rem;
-    font-size: 0.86rem;
-    line-height: 1.45;
+    max-width: 18rem;
+    margin-top: 0.55rem;
+    font-size: 0.78rem;
+    line-height: 1.38;
   }
 
   .hero-subtitle {
